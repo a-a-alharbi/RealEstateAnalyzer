@@ -1,4 +1,3 @@
-import pandas as pd
 import io
 from typing import Dict, Any
 from financial_calculator import FinancialCalculator
@@ -10,25 +9,25 @@ from helpers import (
     format_number,
     format_number_with_unit,
 )
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.graphics.shapes import Drawing
-from reportlab.graphics.charts.barcharts import VerticalBarChart
-from reportlab.graphics.charts.piecharts import Pie
-from reportlab.lib.colors import HexColor
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+
+# Heavy third-party libraries are imported lazily inside the functions that
+# require them. This allows basic utilities to be used in environments where
+# optional dependencies like pandas or reportlab are not installed.
 
 
-def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_df: pd.DataFrame) -> io.BytesIO:
+def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_df: 'pd.DataFrame') -> io.BytesIO:
     """
     Export the investment analysis to an Excel file.
     Returns a BytesIO buffer containing the Excel file.
     """
+    # Import pandas lazily so that this module can be imported without the
+    # dependency installed.  The export functions will raise an informative
+    # error if pandas is unavailable.
+    try:
+        import pandas as pd  # type: ignore
+    except Exception as exc:  # pragma: no cover - optional dependency
+        raise ImportError("pandas is required for export_to_excel") from exc
+
     buffer = io.BytesIO()
     
     # Type ignore to suppress the LSP warning - this is a known working pattern
@@ -315,8 +314,33 @@ def export_to_pdf(calculator: FinancialCalculator, scenarios: Dict, advanced_met
     Export the investment analysis to a professional PDF report.
     Returns a BytesIO buffer containing the PDF file.
     """
+    # Import heavy PDF generation libraries lazily. This keeps the module
+    # importable even when ReportLab or matplotlib are not installed.
+    try:
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.platypus import (
+            SimpleDocTemplate,
+            Table,
+            TableStyle,
+            Paragraph,
+            Spacer,
+            Image,
+        )
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from reportlab.graphics.shapes import Drawing
+        from reportlab.graphics.charts.barcharts import VerticalBarChart
+        from reportlab.graphics.charts.piecharts import Pie
+        from reportlab.lib.colors import HexColor
+        import matplotlib.pyplot as plt
+        import matplotlib
+        matplotlib.use('Agg')
+    except Exception as exc:  # pragma: no cover - optional dependency
+        raise ImportError("reportlab and matplotlib are required for export_to_pdf") from exc
+
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, 
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72,
                            topMargin=72, bottomMargin=18)
     
     # Build story content
