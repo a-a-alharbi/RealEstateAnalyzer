@@ -8,12 +8,14 @@ import plotly.utils
 import json
 import math
 import io
+import os
+import tempfile
 from financial_calculator import FinancialCalculator
 from utils import (
-    format_currency, format_percentage, format_currency_with_color, 
-    format_percentage_with_color, export_to_excel, get_advanced_metrics, 
-    export_to_pdf
+    format_currency, format_percentage, format_currency_with_color,
+    format_percentage_with_color, export_to_excel, get_advanced_metrics
 )
+from report_generator import generate_pdf_report
 
 app = Flask(__name__)
 
@@ -214,11 +216,17 @@ def export_pdf():
         scenarios = calc.get_scenario_analysis()
         advanced_metrics = get_advanced_metrics(calc)
         
-        # Export to PDF
-        pdf_buffer = export_to_pdf(calc, scenarios, advanced_metrics)
-        
+        # Export to PDF using HTML + WeasyPrint
+        tmp_dir = tempfile.gettempdir()
+        pdf_path = os.path.join(tmp_dir, 'investment_analysis.pdf')
+        generate_pdf_report({
+            'calculator': calc,
+            'scenarios': scenarios,
+            'advanced_metrics': advanced_metrics
+        }, pdf_path)
+
         return send_file(
-            pdf_buffer,
+            pdf_path,
             as_attachment=True,
             download_name='investment_analysis.pdf',
             mimetype='application/pdf'
