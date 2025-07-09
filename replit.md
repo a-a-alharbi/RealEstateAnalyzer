@@ -19,7 +19,7 @@ The application follows a modern web application architecture:
 - **Data Processing**: Pandas, NumPy
 - **Financial Calculations**: NumPy Financial
 - **Visualization**: Plotly Express and Plotly Graph Objects
-- **Data Export**: Excel integration via openpyxl, PDF via ReportLab
+- **Data Export**: Excel integration via openpyxl, PDF via ReportLab with embedded charts
 
 ## Key Components
 
@@ -28,7 +28,7 @@ The application follows a modern web application architecture:
 - **Features**: 
   - RESTful API for investment calculations
   - JSON data exchange with frontend
-  - Excel and PDF export endpoints
+  - Excel and PDF export endpoints (PDF includes charts)
   - Real-time calculation processing
 - **Architecture Decision**: Flask was chosen for better performance, scalability, and separation of concerns between frontend and backend
 
@@ -105,5 +105,6 @@ Changelog:
 - July 06, 2025. Complete modern UI redesign with gradient hero section, glass-morphism cards, enhanced animations, and professional color scheme with purple/blue gradients
 - July 06, 2025. Implemented sleek dashboard design with clean KPI cards, smooth area charts, modern donut charts, and professional statistics section matching contemporary dashboard aesthetics
 - July 06, 2025. Complete rebuild using Flask framework with RESTful API architecture, Bootstrap responsive UI, JavaScript frontend interactions, and improved performance over the previous implementation
-- July 06, 2025. Fixed critical PDF export bug where annual rental income was incorrectly treated as monthly rent, causing inflated ROI and cash flow calculations in reports
-- July 06, 2025. Enhanced KPIs with Cash-on-Cash Return and DSCR metrics, implemented intelligent color coding (green/yellow/red) based on performance thresholds, added informative tooltips explaining each metric and its color coding criteria- July 06, 2025. Created main.py deployment entry point to ensure Flask app deploys correctly, added tile containers for KPI section matching Property Details design, fixed color coding for all KPI metrics with performance-based thresholds
+- July 06, 2025. Fixed critical PDF export bug where annual rental income was incorrectly treated as monthly rent, causing inflated ROI and cash flow calculations in reports- July 06, 2025. Enhanced KPIs with Cash-on-Cash Return and DSCR metrics, implemented intelligent color coding (green/yellow/red) based on performance thresholds, and added informative tooltips explaining each metric.
+- July 06, 2025. Created main.py deployment entry point to ensure Flask app deploys correctly, added tile containers for KPI section matching Property Details design, and fixed color coding for all KPI metrics with performance-based thresholds.
+- July 07, 2025. PDF reports now embed charts and include page numbers for easier navigation

@@ -6,7 +6,7 @@ RealEstateAnalyzer is a Flask-based application for evaluating real estate inves
 
 - REST API powered by Flask
 - Interactive dashboard built with HTML, Bootstrap and Plotly
-- PDF and Excel report export
+- PDF and Excel report export with embedded charts
 - Scenario analysis (conservative, base and optimistic)
 
 ## Installation
