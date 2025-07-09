@@ -15,5 +15,4 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "reportlab>=4.4.2",
     "sqlalchemy>=2.0.41",
-    "streamlit>=1.46.1",
 ]

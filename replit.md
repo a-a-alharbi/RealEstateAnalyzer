@@ -61,7 +61,6 @@ The application follows a modern web application architecture:
 ## External Dependencies
 
 ### Core Libraries
-- **streamlit**: Web application framework
 - **pandas**: Data manipulation and analysis
 - **numpy**: Numerical computing
 - **numpy-financial**: Financial calculations (NPV, IRR, etc.)
@@ -71,7 +70,7 @@ The application follows a modern web application architecture:
 ### Rationale for Dependencies
 - **NumPy Financial**: Provides industry-standard financial functions for accurate real estate calculations
 - **Plotly**: Chosen over matplotlib for interactive charts that enhance user experience
-- **Flask**: Provides RESTful API architecture and better performance than Streamlit
+- **Flask**: Provides RESTful API architecture and good performance
 - **Bootstrap**: Ensures responsive design and professional UI components
 
 ## Deployment Strategy
@@ -79,9 +78,8 @@ The application follows a modern web application architecture:
 The application is designed for deployment on Replit with the following considerations:
 
 1. **Single File Deployment**: All dependencies are Python-based for easy package management
-2. **Stateless Design**: Uses Streamlit session state for temporary data storage
-3. **No Database Required**: All calculations are performed in-memory
-4. **Export Functionality**: Provides Excel downloads for data persistence
+2. **No Database Required**: All calculations are performed in-memory
+3. **Export Functionality**: Provides Excel downloads for data persistence
 
 ### Deployment Requirements
 - Python 3.7+
@@ -106,7 +104,6 @@ Changelog:
 - July 06, 2025. Added professional PDF export functionality with comprehensive investment analysis reports including risk assessment and recommendations
 - July 06, 2025. Complete modern UI redesign with gradient hero section, glass-morphism cards, enhanced animations, and professional color scheme with purple/blue gradients
 - July 06, 2025. Implemented sleek dashboard design with clean KPI cards, smooth area charts, modern donut charts, and professional statistics section matching contemporary dashboard aesthetics
-- July 06, 2025. Complete rebuild using Flask framework with RESTful API architecture, Bootstrap responsive UI, JavaScript frontend interactions, and improved performance over Streamlit implementation
+- July 06, 2025. Complete rebuild using Flask framework with RESTful API architecture, Bootstrap responsive UI, JavaScript frontend interactions, and improved performance over the previous implementation
 - July 06, 2025. Fixed critical PDF export bug where annual rental income was incorrectly treated as monthly rent, causing inflated ROI and cash flow calculations in reports
-- July 06, 2025. Enhanced KPIs with Cash-on-Cash Return and DSCR metrics, implemented intelligent color coding (green/yellow/red) based on performance thresholds, added informative tooltips explaining each metric and its color coding criteria
-- July 06, 2025. Created main.py deployment entry point to ensure Flask app deploys correctly instead of old Streamlit version, added tile containers for KPI section matching Property Details design, fixed color coding for all KPI metrics with performance-based thresholds
+- July 06, 2025. Enhanced KPIs with Cash-on-Cash Return and DSCR metrics, implemented intelligent color coding (green/yellow/red) based on performance thresholds, added informative tooltips explaining each metric and its color coding criteria- July 06, 2025. Created main.py deployment entry point to ensure Flask app deploys correctly, added tile containers for KPI section matching Property Details design, fixed color coding for all KPI metrics with performance-based thresholds
