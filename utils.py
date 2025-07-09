@@ -2,6 +2,14 @@ import pandas as pd
 import io
 from typing import Dict, Any
 from financial_calculator import FinancialCalculator
+from helpers import (
+    format_currency,
+    format_currency_with_color,
+    format_percentage,
+    format_percentage_with_color,
+    format_number,
+    format_number_with_unit,
+)
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -15,41 +23,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 
-def format_currency(amount: float) -> str:
-    """Format a number as currency with proper comma separation in Saudi Riyals."""
-    if amount < 0:
-        return f"SAR ({abs(amount):,.0f})"
-    return f"SAR {amount:,.0f}"
-
-def format_currency_with_color(amount: float) -> str:
-    """Format currency with red color for negative values in Streamlit markdown."""
-    if amount < 0:
-        return f":red[SAR ({abs(amount):,.0f})]"
-    return f"SAR {amount:,.0f}"
-
-def format_percentage(percentage: float) -> str:
-    """Format a number as percentage with 2 decimal places."""
-    if percentage < 0:
-        return f"({abs(percentage):.2f}%)"
-    return f"{percentage:.2f}%"
-
-def format_percentage_with_color(percentage: float) -> str:
-    """Format percentage with red color for negative values in Streamlit markdown."""
-    if percentage < 0:
-        return f":red[({abs(percentage):.2f}%)]"
-    return f"{percentage:.2f}%"
-
-def format_number(number: float, decimals: int = 0) -> str:
-    """Format a number with proper comma separation."""
-    if decimals == 0:
-        return f"{number:,.0f}"
-    else:
-        return f"{number:,.{decimals}f}"
-
-def format_number_with_unit(number: float, unit: str = "", decimals: int = 0) -> str:
-    """Format a number with proper comma separation and unit."""
-    formatted_number = format_number(number, decimals)
-    return f"{formatted_number} {unit}".strip()
 
 def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_df: pd.DataFrame) -> io.BytesIO:
     """
