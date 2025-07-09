@@ -71,9 +71,28 @@
 
     <div class="section">
         <h2>Charts</h2>
-        {% for chart in charts %}
-            <img src="{{ chart }}" class="chart">
-        {% endfor %}
+
+        <div class="chart-block">
+            <h3>Cash Flow Performance</h3>
+            <img src="{{ charts[0] }}" class="chart">
+        </div>
+
+        <div class="chart-block">
+            <h3>Investment Overview</h3>
+            <img src="{{ charts[1] }}" class="chart">
+        </div>
+
+        <div class="chart-block">
+            <h3>ROI Comparison by Scenario</h3>
+            <img src="{{ charts[2] }}" class="chart">
+        </div>
+
+        {% if charts|length > 3 %}
+        <div class="chart-block">
+            <h3>Monthly Cash Flow Analysis</h3>
+            <img src="{{ charts[3] }}" class="chart">
+        </div>
+        {% endif %}
     </div>
 
     <div class="section">

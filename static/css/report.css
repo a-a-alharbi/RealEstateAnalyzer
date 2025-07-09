@@ -28,24 +28,29 @@ th {
 tr:nth-child(even) {
     background-color: #f9f9f9;
 }
-.chart {
-    width: 100%;
-    margin-bottom: 20px;
-}
 .logo {
     max-width: 200px;
     margin-bottom: 20px;
 }
-/* Risk level colors */
-.risk-low {
-    color: #28a745;
+.chart {
+    width: 100%;
+    max-width: 600px;
+    display: block;
+    margin: 10px auto 30px auto;
 }
-.risk-medium {
-    color: #ff9800;
+
+/* NEW: For proper chart layout */
+.chart-block {
+    margin-bottom: 40px;
+    text-align: center;
 }
-.risk-high {
-    color: #dc3545;
+.chart-block h3 {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    color: #444;
 }
+
+/* Footer and pagination */
 footer {
     text-align: center;
     font-size: 12px;

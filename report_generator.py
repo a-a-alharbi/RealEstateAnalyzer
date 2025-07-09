@@ -3,9 +3,13 @@ from datetime import datetime
 from typing import Dict, Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from weasyprint import HTML
+
+# 🔧 Set headless backend before importing pyplot
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from weasyprint import HTML
 from financial_calculator import FinancialCalculator
 from helpers import (
     format_currency,
