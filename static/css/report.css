@@ -36,6 +36,16 @@ tr:nth-child(even) {
     max-width: 200px;
     margin-bottom: 20px;
 }
+/* Risk level colors */
+.risk-low {
+    color: #28a745;
+}
+.risk-medium {
+    color: #ff9800;
+}
+.risk-high {
+    color: #dc3545;
+}
 footer {
     text-align: center;
     font-size: 12px;

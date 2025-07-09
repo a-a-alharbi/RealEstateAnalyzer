@@ -11,6 +11,7 @@ from helpers import (
     format_currency,
     format_percentage,
 )
+from utils import get_risk_assessment
 
 
 def _generate_charts(calc: FinancialCalculator, scenarios: Dict[str, Any], img_dir: str) -> list:
@@ -96,6 +97,8 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str) -> str:
         {'label': 'Cap Rate', 'value': format_percentage(advanced['cap_rate'])},
     ]
 
+    risk_assessment = get_risk_assessment(calc, scenarios)
+
     scenario_rows = []
     for key, name in [('conservative', 'Conservative'), ('base', 'Base'), ('optimistic', 'Optimistic')]:
         s = scenarios[key]
@@ -115,6 +118,9 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str) -> str:
         advanced_metrics=adv_metrics,
         scenarios=scenario_rows,
         charts=[os.path.relpath(c, base_dir) for c in charts],
+        risk_level=risk_assessment['risk_level'],
+        risk_factors=risk_assessment['risk_factors'],
+        recommendations=risk_assessment['recommendations'],
         css_path=os.path.relpath(os.path.join(base_dir, 'static', 'css', 'report.css'), base_dir)
     )
 
