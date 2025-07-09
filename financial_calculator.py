@@ -1,6 +1,21 @@
-import numpy as np
-import numpy_financial as npf
+"""Core financial calculations used throughout the application."""
+
 from typing import Dict, Optional, Any
+import math
+
+# These packages are optional. They are only required for advanced
+# calculations like IRR. Import them lazily so the module can still be
+# imported even if the dependencies are missing (e.g. in constrained
+# test environments).
+try:
+    import numpy as np  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    np = None  # type: ignore
+
+try:
+    import numpy_financial as npf  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    npf = None  # type: ignore
 
 class FinancialCalculator:
     """
@@ -125,6 +140,12 @@ class FinancialCalculator:
         Calculate Internal Rate of Return (IRR) including resale value.
         Returns IRR as percentage or None if calculation fails.
         """
+        # IRR relies on numpy-financial. If it's not available simply return
+        # None so that basic functionality can still be tested without the
+        # heavy dependency.
+        if npf is None:
+            return None
+
         try:
             # Initial investment (negative cash flow)
             initial_investment = -self.get_total_initial_investment()
@@ -143,14 +164,19 @@ class FinancialCalculator:
             
             # Calculate IRR
             irr = npf.irr(all_cash_flows)
-            
+
             # Return as percentage, handle NaN, infinity, or complex numbers
-            if irr is None or np.isnan(irr) or np.isinf(irr) or np.iscomplex(irr):
+            if (
+                irr is None
+                or math.isnan(float(irr))
+                or math.isinf(float(irr))
+                or isinstance(irr, complex)
+            ):
                 return None
-            
+
             # Convert to percentage and ensure it's a valid float
             irr_percentage = float(irr * 100)
-            if np.isnan(irr_percentage) or np.isinf(irr_percentage):
+            if math.isnan(irr_percentage) or math.isinf(irr_percentage):
                 return None
                 
             return irr_percentage
