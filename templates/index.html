@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Investment Evaluator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Sidebar -->
+            <div class="col-md-3 sidebar">
+                <div class="sidebar-content">
+                    <h3><i class="fas fa-home"></i> Property Details</h3>
+                    <form id="calculatorForm">
+                        <div class="form-group">
+                            <label for="property_price">Property Price (SAR)</label>
+                            <input type="text" class="form-control currency-input" id="property_price" name="property_price" value="1,875,000" data-value="1875000">
+                            <small class="form-text text-muted">Total property purchase price</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="down_payment_percentage">Down Payment (%)</label>
+                            <input type="range" class="form-control-range" id="down_payment_percentage" name="down_payment_percentage" min="5" max="50" value="20" step="5">
+                            <div class="d-flex justify-content-between">
+                                <span id="down_payment_percentage_value">20%</span>
+                                <span id="down_payment_amount">SAR 375,000</span>
+                            </div>
+                            <small class="form-text text-muted">Percentage of property price</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="enhancement_costs">Enhancement Costs (SAR)</label>
+                            <input type="text" class="form-control currency-input" id="enhancement_costs" name="enhancement_costs" value="0" data-value="0">
+                            <small class="form-text text-muted">Renovation and improvement costs</small>
+                        </div>
+                        
+                        <h4><i class="fas fa-calculator"></i> Financing Terms</h4>
+                        
+                        <div class="form-group">
+                            <label for="loan_term">Loan Term (years)</label>
+                            <select class="form-control" id="loan_term" name="loan_term">
+                                <option value="15">15 years</option>
+                                <option value="20">20 years</option>
+                                <option value="25">25 years</option>
+                                <option value="30" selected>30 years</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="interest_rate">Interest Rate (%)</label>
+                            <input type="number" class="form-control" id="interest_rate" name="interest_rate" value="6.5" step="0.1">
+                        </div>
+                        
+                        <h4><i class="fas fa-chart-line"></i> Rental Income</h4>
+                        
+                        <div class="form-group">
+                            <label for="base_monthly_rent">Annual Rental Income (SAR)</label>
+                            <input type="text" class="form-control currency-input" id="base_monthly_rent" name="base_monthly_rent" value="135,000" data-value="135000">
+                            <small class="form-text text-muted">Expected annual rental income</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="occupancy_rate">Occupancy Rate (%)</label>
+                            <input type="range" class="form-control-range" id="occupancy_rate" name="occupancy_rate" min="70" max="100" value="95">
+                            <span id="occupancy_value">95%</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="hoa_fees_annual">HOA Fees (Annual, SAR)</label>
+                            <input type="text" class="form-control currency-input" id="hoa_fees_annual" name="hoa_fees_annual" value="0" data-value="0">
+                            <small class="form-text text-muted">Annual homeowners association fees</small>
+                        </div>
+                        
+                        <h4><i class="fas fa-clock"></i> Investment Period</h4>
+                        
+                        <div class="form-group">
+                            <label for="holding_period">Holding Period (years)</label>
+                            <select class="form-control" id="holding_period" name="holding_period">
+                                <option value="5">5 years</option>
+                                <option value="10" selected>10 years</option>
+                                <option value="15">15 years</option>
+                                <option value="20">20 years</option>
+                                <option value="25">25 years</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resale_value">Expected Resale Value (SAR)</label>
+                            <input type="text" class="form-control currency-input" id="resale_value" name="resale_value" value="2,343,750" data-value="2343750">
+                            <small class="form-text text-muted">Auto-calculated using 2.5% annual appreciation</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-calculator"></i> Calculate Investment Metrics
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 main-content">
+                <!-- Header Section -->
+                <div class="hero-section">
+                    <div class="container">
+                        <h1 class="hero-title">Real Estate Investment Evaluator</h1>
+                        <p class="hero-subtitle">Comprehensive financial analysis for Saudi Arabian rental property investments</p>
+                    </div>
+                </div>
+                <div class="content-container">
+                    <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner-border" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p>Calculating investment metrics...</p>
+                </div>
+
+                <div id="results" style="display: none;">
+                    <!-- Property Details -->
+                    <div class="chart-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="chart-title">Property Details</div>
+                            <div class="text-muted small">Investment summary</div>
+                        </div>
+                        <div class="row g-3" id="property-details">
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <div class="property-detail-card">
+                                    <div class="property-icon" style="background: linear-gradient(135deg, #4285F4, #5294FF);">
+                                        <i class="fas fa-home"></i>
+                                    </div>
+                                    <div class="property-label">Property Price</div>
+                                    <div class="property-value" id="detail-property-price">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <div class="property-detail-card">
+                                    <div class="property-icon" style="background: linear-gradient(135deg, #34A853, #4CBB7A);">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                    <div class="property-label">Down Payment</div>
+                                    <div class="property-value" id="detail-down-payment">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <div class="property-detail-card">
+                                    <div class="property-icon" style="background: linear-gradient(135deg, #FF6B6B, #FF8E8E);">
+                                        <i class="fas fa-university"></i>
+                                    </div>
+                                    <div class="property-label">Loan Amount</div>
+                                    <div class="property-value" id="detail-loan-amount">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <div class="property-detail-card">
+                                    <div class="property-icon" style="background: linear-gradient(135deg, #FBBC04, #FFC947);">
+                                        <i class="fas fa-wrench"></i>
+                                    </div>
+                                    <div class="property-label">Enhancement Cost</div>
+                                    <div class="property-value" id="detail-enhancement-cost">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <div class="property-detail-card">
+                                    <div class="property-icon" style="background: linear-gradient(135deg, #9C27B0, #BA68C8);">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div class="property-label">Monthly Payment</div>
+                                    <div class="property-value" id="detail-monthly-payment">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-sm-6">
+                                <div class="property-detail-card">
+                                    <div class="property-icon" style="background: linear-gradient(135deg, #FF9800, #FFB347);">
+                                        <i class="fas fa-percentage"></i>
+                                    </div>
+                                    <div class="property-label">Interest Rate</div>
+                                    <div class="property-value" id="detail-interest-rate">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI Cards -->
+                    <div class="chart-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="chart-title">Key Performance Indicators</div>
+                            <div class="text-muted small">Investment metrics</div>
+                        </div>
+                        <div class="row g-3" id="kpi-cards">
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <div class="property-detail-card" id="kpi-card-investment">
+                                <div class="property-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <div class="property-label">Total Investment</div>
+                                <div class="property-value" id="kpi-total-investment">-</div>
+                                <div class="kpi-info" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Down payment + enhancement costs + closing fees. This is your total upfront capital requirement to start the investment.">
+                                    <i class="fas fa-question-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <div class="property-detail-card" id="kpi-card-cash-flow">
+                                <div class="property-icon" style="background: linear-gradient(135deg, #007bff, #6610f2);">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                </div>
+                                <div class="property-label">Monthly Cash Flow</div>
+                                <div class="property-value" id="kpi-monthly-cash-flow">-</div>
+                                <div class="kpi-info" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Net monthly income after mortgage payments and expenses. Green: Positive (property generates income), Yellow: Break-even, Red: Negative (you pay monthly).">
+                                    <i class="fas fa-question-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <div class="property-detail-card" id="kpi-card-roi">
+                                <div class="property-icon" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="property-label">Annual ROI</div>
+                                <div class="property-value" id="kpi-annual-roi">-</div>
+                                <div class="kpi-info" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Return on Investment - annual cash flow divided by total investment. Green: Excellent (>8%), Yellow: Good (5-8%), Red: Poor (<5%). Compare with stock market returns.">
+                                    <i class="fas fa-question-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <div class="property-detail-card" id="kpi-card-cash-on-cash">
+                                <div class="property-icon" style="background: linear-gradient(135deg, #dc3545, #e83e8c);">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <div class="property-label">Cash-on-Cash Return</div>
+                                <div class="property-value" id="kpi-cash-on-cash">-</div>
+                                <div class="kpi-info" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Annual cash flow divided by cash invested. Measures return on your actual cash investment. Green: Excellent (>12%), Yellow: Good (8-12%), Red: Poor (<8%).">
+                                    <i class="fas fa-question-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <div class="property-detail-card" id="kpi-card-dscr">
+                                <div class="property-icon" style="background: linear-gradient(135deg, #17a2b8, #6f42c1);">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="property-label">DSCR</div>
+                                <div class="property-value" id="kpi-dscr">-</div>
+                                <div class="kpi-info" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Debt Service Coverage Ratio - rental income divided by mortgage payments. Shows ability to service debt. Green: Strong (>1.25), Yellow: Adequate (1.0-1.25), Red: Risky (<1.0).">
+                                    <i class="fas fa-question-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <div class="property-detail-card" id="kpi-card-payback">
+                                <div class="property-icon" style="background: linear-gradient(135deg, #6c757d, #495057);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="property-label">Payback Period</div>
+                                <div class="property-value" id="kpi-break-even">-</div>
+                                <div class="kpi-info" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                     title="Time to recover your initial investment through cash flow. Green: Fast recovery (<10 years), Yellow: Moderate (10-15 years), Red: Slow (>15 years).">
+                                    <i class="fas fa-question-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario Analysis Table -->
+                    <div class="chart-card mb-4">
+                        <div class="chart-title">Scenario Analysis</div>
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="scenario-table">
+                                <thead>
+                                    <tr>
+                                        <th>Scenario</th>
+                                        <th>Monthly Rent</th>
+                                        <th>Monthly Cash Flow</th>
+                                        <th>Annual Cash Flow</th>
+                                        <th>ROI (%)</th>
+                                        <th>IRR (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scenario-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Main Charts -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="chart-card">
+                                <div class="chart-title">Cash Flow Performance</div>
+                                <div id="cash-flow-chart"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-card">
+                                <div class="chart-title">Investment Overview</div>
+                                <div id="investment-breakdown-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROI Comparison -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="chart-card">
+                                <div class="chart-title">ROI Comparison by Scenario</div>
+                                <div id="roi-comparison-chart"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-card">
+                                <div class="chart-title">Monthly Cash Flow Analysis</div>
+                                <div id="monthly-analysis-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="stat-card">
+                                <div class="stat-title">Total Investment This Year</div>
+                                <div class="stat-value" id="stat-total-investment">-</div>
+                                <div class="stat-description">Initial capital required</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stat-card">
+                                <div class="stat-title">Total Returns This Year</div>
+                                <div class="stat-value" id="stat-total-returns">-</div>
+                                <div class="stat-description">Annual cash flow generated</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Buttons -->
+                    <div class="export-section">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button class="btn btn-success btn-block" id="export-excel">
+                                    <i class="fas fa-file-excel"></i> Export to Excel
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-danger btn-block" id="export-pdf">
+                                    <i class="fas fa-file-pdf"></i> Export to PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Welcome Screen -->
+                <div id="welcome" class="welcome-screen">
+                    <div class="welcome-content">
+                        <h2>Welcome to Real Estate Investment Evaluator</h2>
+                        <p>This tool helps you analyze the financial viability of rental property investments by calculating:</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Loan calculations (monthly payments, total interest)</li>
+                            <li><i class="fas fa-check"></i> Cash flow analysis (monthly and annual projections)</li>
+                            <li><i class="fas fa-check"></i> Return metrics (ROI, IRR)</li>
+                            <li><i class="fas fa-check"></i> Scenario comparisons (Conservative, Base, Optimistic)</li>
+                            <li><i class="fas fa-check"></i> Risk assessment and investment summaries</li>
+                        </ul>
+                        <div class="how-to-use">
+                            <h3>How to use:</h3>
+                            <ol>
+                                <li>Fill in the property details in the sidebar</li>
+                                <li>Enter your financing terms</li>
+                                <li>Set rental income expectations</li>
+                                <li>Click "Calculate Investment Metrics"</li>
+                                <li>Review the comprehensive analysis and export results</li>
+                            </ol>
+                        </div>
+                        <div class="example-analysis">
+                            <h3>Example Analysis</h3>
+                            <p>For a <strong>SAR 1,875,000</strong> property with <strong>20% down</strong>, <strong>6.5% interest</strong>, and <strong>SAR 135,000/year rent</strong>:</p>
+                            <ul>
+                                <li>Monthly payment: ~SAR 9,480</li>
+                                <li>Monthly cash flow: ~SAR 1,208 (after 95% occupancy)</li>
+                                <li>Annual ROI: ~7.4%</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
