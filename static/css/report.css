@@ -1,6 +1,9 @@
+@import url('style.css');
+
 body {
-    font-family: 'Roboto', sans-serif;
-    color: #333;
+    background-color: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #495057;
 }
 .cover {
     text-align: center;
@@ -18,15 +21,22 @@ table {
     border-collapse: collapse;
     margin-bottom: 20px;
 }
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
+table thead th {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border: none;
+    padding: 1rem;
 }
-th {
-    background-color: #f2f2f2;
+table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
 }
-tr:nth-child(even) {
-    background-color: #f9f9f9;
+table td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
 }
 .logo {
     max-width: 200px;
@@ -48,6 +58,21 @@ tr:nth-child(even) {
     font-size: 1.1em;
     margin-bottom: 10px;
     color: #444;
+}
+
+.risk-low {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.risk-medium {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+.risk-high {
+    color: #dc3545;
+    font-weight: 600;
 }
 
 /* Footer and pagination */
