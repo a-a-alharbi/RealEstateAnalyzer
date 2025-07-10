@@ -167,7 +167,7 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str) -> str:
         s = scenarios[key]
         scenario_rows.append({
             'name': name,
-            'monthly_rent': format_currency(s['monthly_rent']),
+            'annual_rent': format_currency(s['monthly_rent'] * 12),
             'annual_cash_flow': format_currency(s['annual_cash_flow']),
             'roi': format_percentage(s['roi']),
             'irr': format_percentage(s['irr']) if s['irr'] is not None else 'N/A',

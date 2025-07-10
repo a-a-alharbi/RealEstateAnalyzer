@@ -55,7 +55,7 @@
             <thead>
                 <tr>
                     <th>Scenario</th>
-                    <th>Monthly Rent</th>
+                    <th>Annual Rent</th>
                     <th>Annual Cash Flow</th>
                     <th>ROI (%)</th>
                     <th>IRR (%)</th>
@@ -65,7 +65,7 @@
             {% for sc in scenarios %}
                 <tr>
                     <td>{{ sc.name }}</td>
-                    <td>{{ sc.monthly_rent }}</td>
+                    <td>{{ sc.annual_rent }}</td>
                     <td>{{ sc.annual_cash_flow }}</td>
                     <td>{{ sc.roi }}</td>
                     <td>{{ sc.irr }}</td>
