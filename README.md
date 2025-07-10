@@ -35,3 +35,10 @@ The application will be available at `http://localhost:5000`.
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
+### Rent Growth
+
+The **Rent Growth % (optional)** field allows you to model annual rent escalation.
+Enter a yearly percentage (e.g., `3` for 3% growth). If left at `0`, rents remain
+flat. When a rate is provided, rents compound each year and all cash flow metrics,
+ROI, IRR, payback period and charts will reflect the increasing income.

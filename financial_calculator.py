@@ -30,6 +30,7 @@ class FinancialCalculator:
         interest_rate: float,
         base_monthly_rent: float,
         occupancy_rate: float,
+        rent_growth: float = 0,
         enhancement_costs: float = 0,
         hoa_fees_annual: float = 0,
         holding_period: int = 10,
@@ -41,6 +42,7 @@ class FinancialCalculator:
         self.interest_rate = interest_rate
         self.base_monthly_rent = base_monthly_rent
         self.occupancy_rate = occupancy_rate
+        self.rent_growth = rent_growth
         self.enhancement_costs = enhancement_costs
         self.hoa_fees_annual = hoa_fees_annual
         self.holding_period = holding_period
@@ -63,6 +65,8 @@ class FinancialCalculator:
             raise ValueError("Monthly rent cannot be negative")
         if not 0 <= self.occupancy_rate <= 100:
             raise ValueError("Occupancy rate must be between 0 and 100")
+        if self.rent_growth < 0:
+            raise ValueError("Rent growth cannot be negative")
     
     def get_loan_amount(self) -> float:
         """Calculate the loan amount."""
@@ -106,6 +110,39 @@ class FinancialCalculator:
         """Calculate effective monthly rent considering occupancy rate."""
         gross_rent = self.base_monthly_rent * rent_multiplier
         return gross_rent * (self.occupancy_rate / 100)
+
+    # ---- New methods supporting rent escalation ----
+
+    def _rent_growth_factor(self, year: int) -> float:
+        """Return compounded growth factor for a given year (1-indexed)."""
+        return (1 + self.rent_growth / 100) ** (year - 1)
+
+    def get_monthly_rent_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
+        """Monthly rent for a specific year accounting for growth."""
+        return self.base_monthly_rent * self._rent_growth_factor(year) * rent_multiplier
+
+    def get_effective_monthly_rent_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
+        gross = self.get_monthly_rent_for_year(year, rent_multiplier)
+        return gross * (self.occupancy_rate / 100)
+
+    def get_monthly_cash_flow_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
+        effective_rent = self.get_effective_monthly_rent_for_year(year, rent_multiplier)
+        monthly_payment = self.get_monthly_payment()
+        monthly_hoa = self.hoa_fees_annual / 12
+        return effective_rent - monthly_payment - monthly_hoa
+
+    def get_annual_net_income_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
+        effective_rent = self.get_effective_monthly_rent_for_year(year, rent_multiplier)
+        return effective_rent * 12 - self.hoa_fees_annual
+
+    def get_annual_cash_flow_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
+        return self.get_monthly_cash_flow_for_year(year, rent_multiplier) * 12
+
+    def get_net_income_schedule(self, rent_multiplier: float = 1.0) -> list:
+        return [self.get_annual_net_income_for_year(y, rent_multiplier) for y in range(1, self.holding_period + 1)]
+
+    def get_cash_flow_schedule(self, rent_multiplier: float = 1.0) -> list:
+        return [self.get_annual_cash_flow_for_year(y, rent_multiplier) for y in range(1, self.holding_period + 1)]
     
     def get_monthly_cash_flow(self, rent_multiplier: float = 1.0) -> float:
         """Calculate monthly cash flow."""
@@ -124,16 +161,17 @@ class FinancialCalculator:
     def get_annual_cash_flow(self, rent_multiplier: float = 1.0) -> float:
         """Calculate annual cash flow (after mortgage)."""
         return self.get_monthly_cash_flow(rent_multiplier) * 12
-    
+
     def get_roi(self, rent_multiplier: float = 1.0) -> float:
-        """Calculate Return on Investment (ROI) as percentage."""
-        annual_cash_flow = self.get_annual_cash_flow(rent_multiplier)
+        """Calculate Return on Investment (ROI) using average annual cash flow."""
+        cash_flows = self.get_cash_flow_schedule(rent_multiplier)
+        if not cash_flows:
+            return 0
+        avg_cash_flow = sum(cash_flows) / len(cash_flows)
         total_investment = self.get_total_initial_investment()
-        
         if total_investment <= 0:
             return 0
-        
-        return (annual_cash_flow / total_investment) * 100
+        return (avg_cash_flow / total_investment) * 100
     
     def get_irr(self, rent_multiplier: float = 1.0) -> Optional[float]:
         """
@@ -149,16 +187,11 @@ class FinancialCalculator:
         try:
             # Initial investment (negative cash flow)
             initial_investment = -self.get_total_initial_investment()
-            
-            # Annual cash flows
-            annual_cash_flow = self.get_annual_cash_flow(rent_multiplier)
-            cash_flows = [annual_cash_flow] * (self.holding_period - 1)
-            
-            # Final year includes resale proceeds
-            capital_gain = self.resale_value - self.property_price
-            final_cash_flow = annual_cash_flow + capital_gain
-            cash_flows.append(final_cash_flow)
-            
+
+            cash_flows = [self.get_annual_cash_flow_for_year(y, rent_multiplier) for y in range(1, self.holding_period + 1)]
+            # Add resale proceeds in final year
+            cash_flows[-1] += self.resale_value - self.property_price
+
             # Combine initial investment with cash flows
             all_cash_flows = [initial_investment] + cash_flows
             
@@ -199,23 +232,28 @@ class FinancialCalculator:
         
         for scenario_key, scenario_info in scenarios.items():
             multiplier = scenario_info['multiplier']
-            
-            monthly_rent = self.base_monthly_rent * multiplier
-            effective_monthly_rent = self.get_effective_monthly_rent(multiplier)
-            monthly_cash_flow = self.get_monthly_cash_flow(multiplier)
-            annual_net_income = self.get_annual_net_income(multiplier)
-            annual_cash_flow = self.get_annual_cash_flow(multiplier)
+            monthly_rent = self.get_monthly_rent_for_year(1, multiplier)
+            effective_monthly_rent = self.get_effective_monthly_rent_for_year(1, multiplier)
+
+            net_income_schedule = self.get_net_income_schedule(multiplier)
+            cash_flow_schedule = self.get_cash_flow_schedule(multiplier)
+
+            avg_net_income = sum(net_income_schedule) / len(net_income_schedule)
+            avg_cash_flow = sum(cash_flow_schedule) / len(cash_flow_schedule)
+
             roi = self.get_roi(multiplier)
             irr = self.get_irr(multiplier)
-            
+
             results[scenario_key] = {
                 'monthly_rent': monthly_rent,
                 'effective_monthly_rent': effective_monthly_rent,
-                'monthly_cash_flow': monthly_cash_flow,
-                'annual_net_income': annual_net_income,
-                'annual_cash_flow': annual_cash_flow,
+                'monthly_cash_flow': avg_cash_flow / 12,
+                'annual_net_income': avg_net_income,
+                'annual_cash_flow': avg_cash_flow,
                 'roi': roi,
-                'irr': irr
+                'irr': irr,
+                'net_income_schedule': net_income_schedule,
+                'cash_flow_schedule': cash_flow_schedule
             }
         
         return results
