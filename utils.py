@@ -150,12 +150,12 @@ def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_d
             base_scenario = scenarios['base']
             cash_flow_data.append({
                 'Year': year,
-                'Conservative Cash Flow': scenarios['conservative']['annual_cash_flow'],
-                'Base Cash Flow': base_scenario['annual_cash_flow'],
-                'Optimistic Cash Flow': scenarios['optimistic']['annual_cash_flow'],
-                'Cumulative Conservative': scenarios['conservative']['annual_cash_flow'] * year,
-                'Cumulative Base': base_scenario['annual_cash_flow'] * year,
-                'Cumulative Optimistic': scenarios['optimistic']['annual_cash_flow'] * year
+                'Conservative Cash Flow': scenarios['conservative']['cash_flow_schedule'][year-1],
+                'Base Cash Flow': base_scenario['cash_flow_schedule'][year-1],
+                'Optimistic Cash Flow': scenarios['optimistic']['cash_flow_schedule'][year-1],
+                'Cumulative Conservative': sum(scenarios['conservative']['cash_flow_schedule'][:year]),
+                'Cumulative Base': sum(base_scenario['cash_flow_schedule'][:year]),
+                'Cumulative Optimistic': sum(scenarios['optimistic']['cash_flow_schedule'][:year])
             })
         
         cash_flow_df = pd.DataFrame(cash_flow_data)
@@ -271,17 +271,32 @@ def get_recommendations(calculator: FinancialCalculator, scenarios: Dict, risk_l
     
     return recommendations
 
-def calculate_payback_period(total_initial_investment: float, annual_cash_flow: float) -> float:
+def calculate_payback_period(total_initial_investment: float, annual_cash_flow: 'Union[float, list]') -> float:
+    """Calculate payback period in years.
+    Supports constant or variable annual cash flow.
     """
-    Calculate payback period in years.
-    Payback Period = Total Initial Investment / Annual Cash Flow
-    """
-    if annual_cash_flow <= 0:
-        return 999.0  # Use a large number instead of infinity for JSON compatibility
-    
-    payback = total_initial_investment / annual_cash_flow
-    # Cap at 999 years for extremely long payback periods
-    return min(payback, 999.0)
+    from typing import Union
+
+    if isinstance(annual_cash_flow, list):
+        cumulative = 0.0
+        for idx, cf in enumerate(annual_cash_flow, start=1):
+            cumulative += cf
+            if cumulative >= total_initial_investment:
+                prev = cumulative - cf
+                fraction = (total_initial_investment - prev) / cf if cf else 0
+                return min(idx - 1 + fraction, 999.0)
+        if not annual_cash_flow:
+            return 999.0
+        last_cf = annual_cash_flow[-1]
+        if last_cf <= 0:
+            return 999.0
+        remaining = total_initial_investment - cumulative
+        return min(len(annual_cash_flow) + remaining / last_cf, 999.0)
+    else:
+        if annual_cash_flow <= 0:
+            return 999.0
+        payback = total_initial_investment / annual_cash_flow
+        return min(payback, 999.0)
 
 def get_advanced_metrics(calculator) -> Dict[str, Any]:
     """
@@ -291,13 +306,16 @@ def get_advanced_metrics(calculator) -> Dict[str, Any]:
     
     # Calculate metrics
     annual_debt_service = calculator.get_monthly_payment() * 12
-    annual_net_income = base_scenario['annual_net_income']
-    annual_cash_flow = base_scenario['annual_cash_flow']
+    net_income_schedule = base_scenario['net_income_schedule']
+    cash_flow_schedule = base_scenario['cash_flow_schedule']
     total_initial_investment = calculator.get_total_initial_investment()
-    
+
+    annual_net_income = net_income_schedule[0] if net_income_schedule else 0
+    avg_cash_flow = sum(cash_flow_schedule) / len(cash_flow_schedule) if cash_flow_schedule else 0
+
     dscr = calculate_debt_service_coverage_ratio(annual_net_income, annual_debt_service)
-    cash_on_cash = calculate_cash_on_cash_return(annual_cash_flow, total_initial_investment)
-    payback_period = calculate_payback_period(total_initial_investment, annual_cash_flow)
+    cash_on_cash = calculate_cash_on_cash_return(avg_cash_flow, total_initial_investment)
+    payback_period = calculate_payback_period(total_initial_investment, cash_flow_schedule)
     cap_rate = calculate_cap_rate(annual_net_income, calculator.property_price)
     
     return {

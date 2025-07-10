@@ -65,11 +65,16 @@ def _generate_charts(calc: FinancialCalculator, scenarios: Dict[str, Any], img_d
     os.makedirs(img_dir, exist_ok=True)
     charts = []
     years = list(range(1, calc.holding_period + 1))
-    cumulative = {
-        'Conservative': [scenarios['conservative']['annual_cash_flow'] * y for y in years],
-        'Base': [scenarios['base']['annual_cash_flow'] * y for y in years],
-        'Optimistic': [scenarios['optimistic']['annual_cash_flow'] * y for y in years],
-    }
+    cumulative = {}
+    for key, name in [('conservative', 'Conservative'), ('base', 'Base'), ('optimistic', 'Optimistic')]:
+        total = 0
+        cumulative[name] = []
+        for cf in scenarios[key]['cash_flow_schedule']:
+            total += cf
+            cumulative[name].append(total)
+        # pad to full length if needed
+        if len(cumulative[name]) < len(years):
+            cumulative[name].extend([total] * (len(years) - len(cumulative[name])))
 
     fig, ax = plt.subplots(figsize=(6, 3))
     for name, values in cumulative.items():
