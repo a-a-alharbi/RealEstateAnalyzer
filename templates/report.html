@@ -16,7 +16,7 @@
     </div>
 
     <div class="section">
-        <h2>Investment Summary</h2>
+        <h2>Property Information</h2>
         <table>
             <thead>
                 <tr><th>Metric</th><th>Value</th></tr>
@@ -30,18 +30,24 @@
     </div>
 
     <div class="section">
-        <h2>Advanced Metrics</h2>
+        <h2>Advanced Financial Metrics</h2>
         <table>
             <thead>
-                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>
             </thead>
             <tbody>
             {% for row in advanced_metrics %}
-                <tr><td>{{ row.label }}</td><td>{{ row.value }}</td></tr>
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.value }}</td>
+                    <td>{{ row.interpretation }}</td>
+                </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <div class="page-break"></div>
 
     <div class="section">
         <h2>Scenario Analysis</h2>
@@ -49,7 +55,7 @@
             <thead>
                 <tr>
                     <th>Scenario</th>
-                    <th>Monthly Rent</th>
+                    <th>Annual Rent</th>
                     <th>Annual Cash Flow</th>
                     <th>ROI (%)</th>
                     <th>IRR (%)</th>
@@ -59,7 +65,7 @@
             {% for sc in scenarios %}
                 <tr>
                     <td>{{ sc.name }}</td>
-                    <td>{{ sc.monthly_rent }}</td>
+                    <td>{{ sc.annual_rent }}</td>
                     <td>{{ sc.annual_cash_flow }}</td>
                     <td>{{ sc.roi }}</td>
                     <td>{{ sc.irr }}</td>
