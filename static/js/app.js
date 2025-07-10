@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const downPaymentPercentageValue = document.getElementById('down_payment_percentage_value');
     const downPaymentAmount = document.getElementById('down_payment_amount');
     const propertyPriceInput = document.getElementById('property_price');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+        });
+    }
 
     // Initialize currency input formatting
     initializeCurrencyInputs();
