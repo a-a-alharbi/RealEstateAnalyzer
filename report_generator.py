@@ -18,6 +18,49 @@ from helpers import (
 from utils import get_risk_assessment
 
 
+def _interpret_metric(label: str, value: float) -> str:
+    """Return a simple interpretation for advanced metrics."""
+    if label == 'DSCR':
+        if value == float('inf'):
+            return 'No debt service'
+        if value < 1:
+            return 'Below breakeven'
+        elif value < 1.25:
+            return 'Tight coverage'
+        elif value < 1.5:
+            return 'Healthy'
+        else:
+            return 'Strong'
+    if label == 'Cash-on-Cash Return':
+        if value < 5:
+            return 'Low'
+        elif value < 10:
+            return 'Average'
+        elif value < 15:
+            return 'Good'
+        else:
+            return 'Excellent'
+    if label == 'Payback Period':
+        if value == float('inf'):
+            return 'No payback'
+        if value < 5:
+            return 'Fast'
+        elif value < 10:
+            return 'Moderate'
+        elif value < 20:
+            return 'Slow'
+        else:
+            return 'Very slow'
+    if label == 'Cap Rate':
+        if value < 4:
+            return 'Low yield'
+        elif value < 6:
+            return 'Moderate yield'
+        else:
+            return 'High yield'
+    return ''
+
+
 def _generate_charts(calc: FinancialCalculator, scenarios: Dict[str, Any], img_dir: str) -> list:
     os.makedirs(img_dir, exist_ok=True)
     charts = []
@@ -95,10 +138,26 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str) -> str:
     ]
 
     adv_metrics = [
-        {'label': 'DSCR', 'value': f"{advanced['dscr']:.2f}" if advanced['dscr'] != float('inf') else 'N/A'},
-        {'label': 'Cash-on-Cash Return', 'value': format_percentage(advanced['cash_on_cash_return'])},
-        {'label': 'Payback Period', 'value': f"{advanced['payback_period']:.1f} years" if advanced['payback_period'] != float('inf') else 'Never'},
-        {'label': 'Cap Rate', 'value': format_percentage(advanced['cap_rate'])},
+        {
+            'label': 'DSCR',
+            'value': f"{advanced['dscr']:.2f}" if advanced['dscr'] != float('inf') else 'N/A',
+            'interpretation': _interpret_metric('DSCR', advanced['dscr']),
+        },
+        {
+            'label': 'Cash-on-Cash Return',
+            'value': format_percentage(advanced['cash_on_cash_return']),
+            'interpretation': _interpret_metric('Cash-on-Cash Return', advanced['cash_on_cash_return']),
+        },
+        {
+            'label': 'Payback Period',
+            'value': f"{advanced['payback_period']:.1f} years" if advanced['payback_period'] != float('inf') else 'Never',
+            'interpretation': _interpret_metric('Payback Period', advanced['payback_period']),
+        },
+        {
+            'label': 'Cap Rate',
+            'value': format_percentage(advanced['cap_rate']),
+            'interpretation': _interpret_metric('Cap Rate', advanced['cap_rate']),
+        },
     ]
 
     risk_assessment = get_risk_assessment(calc, scenarios)
