@@ -10,10 +10,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <button class="btn btn-primary sidebar-toggle d-md-none" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </button>
     <div class="container-fluid p-0">
         <div class="row g-0">
             <!-- Sidebar -->
-            <div class="col-md-3 sidebar">
+            <div class="col-md-3 sidebar" id="sidebar">
                 <div class="sidebar-content">
                     <h3><i class="fas fa-home"></i> Property Details</h3>
                     <form id="calculatorForm">
