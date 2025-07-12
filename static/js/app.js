@@ -656,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('detail-loan-amount').textContent = formatCurrency(data.calculator_data.loan_amount);
             document.getElementById('detail-enhancement-cost').textContent = formatCurrency(parseFloat(enhancementCost));
             document.getElementById('detail-monthly-payment').textContent = formatCurrency(data.calculator_data.monthly_payment);
-            document.getElementById('detail-interest-rate').textContent = parseFloat(interestRate).toFixed(1) + '%';
+            document.getElementById('detail-interest-rate').textContent = parseFloat(interestRate).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 }) + '%';
         } catch (error) {
             console.error('Error updating property details:', error);
         }
