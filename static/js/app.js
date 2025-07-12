@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update down payment display
     function updateDownPayment() {
-        const percentage = parseInt(downPaymentSlider.value);
+        const percentage = parseFloat(downPaymentSlider.value);
         const propertyPrice = parseInt(propertyPriceInput.getAttribute('data-value') || '0');
         const amount = (propertyPrice * percentage) / 100;
         
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Calculate down payment amount from percentage
         if (data.down_payment_percentage) {
             const propertyPrice = parseInt(data.property_price || '0');
-            const percentage = parseInt(data.down_payment_percentage);
+            const percentage = parseFloat(data.down_payment_percentage);
             data.down_payment = (propertyPrice * percentage / 100).toString();
         }
 
@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Calculate down payment amount from percentage
         if (data.down_payment_percentage) {
             const propertyPrice = parseInt(data.property_price || '0');
-            const percentage = parseInt(data.down_payment_percentage);
+            const percentage = parseFloat(data.down_payment_percentage);
             data.down_payment = (propertyPrice * percentage / 100).toString();
         }
 
