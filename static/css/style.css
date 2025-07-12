@@ -524,6 +524,25 @@ body {
     .stat-value {
         font-size: 1.5rem;
     }
+
+    /* Smaller icons and text for compact mobile view */
+    .property-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .property-label {
+        font-size: 0.65rem;
+    }
+
+    .property-value {
+        font-size: 0.8rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
 }
 
 /* Animation */
