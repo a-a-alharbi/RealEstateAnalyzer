@@ -643,10 +643,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const propertyPriceElement = document.getElementById('property_price');
             const enhancementCostElement = document.getElementById('enhancement_costs');
             const interestRateElement = document.getElementById('interest_rate');
+            const interestTypeElement = document.getElementById('interest_type');
             
             const propertyPrice = propertyPriceElement ? (propertyPriceElement.getAttribute('data-value') || propertyPriceElement.value || '0') : '0';
             const enhancementCost = enhancementCostElement ? (enhancementCostElement.getAttribute('data-value') || enhancementCostElement.value || '0') : '0';
             const interestRate = interestRateElement ? interestRateElement.value : '0';
+            const interestType = interestTypeElement ? interestTypeElement.options[interestTypeElement.selectedIndex].text : '';
             
             // Calculate down payment from total investment minus enhancement costs
             const downPayment = data.calculator_data.total_investment - parseFloat(enhancementCost);
@@ -656,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('detail-loan-amount').textContent = formatCurrency(data.calculator_data.loan_amount);
             document.getElementById('detail-enhancement-cost').textContent = formatCurrency(parseFloat(enhancementCost));
             document.getElementById('detail-monthly-payment').textContent = formatCurrency(data.calculator_data.monthly_payment);
-            document.getElementById('detail-interest-rate').textContent = parseFloat(interestRate).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '%';
+            document.getElementById('detail-interest-rate').textContent = parseFloat(interestRate).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '%' + (interestType ? ' (' + interestType + ')' : '');
         } catch (error) {
             console.error('Error updating property details:', error);
         }
