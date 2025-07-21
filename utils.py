@@ -48,6 +48,7 @@ def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_d
             'Loan Amount',
             'Loan Term (Years)',
             'Interest Rate (%)',
+            'Interest Type',
             'Monthly Payment'
         ])
         
@@ -59,6 +60,7 @@ def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_d
             format_currency(summary['loan_amount']),
             str(calculator.loan_term),
             f"{calculator.interest_rate:.2f}%",
+            calculator.interest_type.title(),
             format_currency(summary['monthly_payment'])
         ])
         

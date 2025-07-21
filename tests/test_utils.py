@@ -1,3 +1,7 @@
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from utils import calculate_debt_service_coverage_ratio
 
 

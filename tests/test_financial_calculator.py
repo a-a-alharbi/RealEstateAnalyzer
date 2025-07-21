@@ -1,4 +1,8 @@
+import os
+import sys
 import pytest
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from financial_calculator import FinancialCalculator
 
 
@@ -18,6 +22,12 @@ def test_monthly_payment():
     calc = FinancialCalculator(100000, 20000, 30, 5.0, 1500, 100)
     payment = calc.get_monthly_payment()
     assert payment == pytest.approx(429.46, abs=0.1)
+
+
+def test_monthly_payment_simple_interest():
+    calc = FinancialCalculator(100000, 20000, 30, 5.0, 1500, 100, interest_type="simple")
+    payment = calc.get_monthly_payment()
+    assert payment == pytest.approx(555.56, abs=0.1)
 
 
 def test_rent_growth_escalates_cash_flow():

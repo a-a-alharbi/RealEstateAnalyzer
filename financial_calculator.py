@@ -34,12 +34,14 @@ class FinancialCalculator:
         enhancement_costs: float = 0,
         hoa_fees_annual: float = 0,
         holding_period: int = 10,
-        resale_value: Optional[float] = None
+        resale_value: Optional[float] = None,
+        interest_type: str = "apr"
     ):
         self.property_price = property_price
         self.down_payment = down_payment
         self.loan_term = loan_term
         self.interest_rate = interest_rate
+        self.interest_type = interest_type.lower()
         self.base_monthly_rent = base_monthly_rent
         self.occupancy_rate = occupancy_rate
         self.rent_growth = rent_growth
@@ -61,6 +63,8 @@ class FinancialCalculator:
             raise ValueError("Loan term must be positive")
         if self.interest_rate < 0:
             raise ValueError("Interest rate cannot be negative")
+        if self.interest_type not in {"apr", "simple"}:
+            raise ValueError("interest_type must be 'apr' or 'simple'")
         if self.base_monthly_rent < 0:
             raise ValueError("Monthly rent cannot be negative")
         if not 0 <= self.occupancy_rate <= 100:
@@ -73,29 +77,38 @@ class FinancialCalculator:
         return self.property_price - self.down_payment
     
     def get_monthly_payment(self) -> float:
-        """Calculate monthly mortgage payment using PMT formula."""
+        """Calculate monthly payment based on interest type."""
         loan_amount = self.get_loan_amount()
-        
+
         if loan_amount <= 0:
             return 0
-        
-        monthly_rate = self.interest_rate / 100 / 12
+
         num_payments = self.loan_term * 12
-        
+
+        if self.interest_type == "simple":
+            total_interest = loan_amount * (self.interest_rate / 100) * self.loan_term
+            return (loan_amount + total_interest) / num_payments
+
+        monthly_rate = self.interest_rate / 100 / 12
+
         if monthly_rate == 0:
             return loan_amount / num_payments
-        
-        # PMT formula: PMT = PV * (r * (1 + r)^n) / ((1 + r)^n - 1)
+
+        # PMT formula for APR/compound interest
         payment = loan_amount * (monthly_rate * (1 + monthly_rate) ** num_payments) / \
-                 ((1 + monthly_rate) ** num_payments - 1)
-        
+            ((1 + monthly_rate) ** num_payments - 1)
+
         return payment
     
     def get_total_interest(self) -> float:
         """Calculate total interest paid over the loan term."""
+        loan_amount = self.get_loan_amount()
+
+        if self.interest_type == "simple":
+            return loan_amount * (self.interest_rate / 100) * self.loan_term
+
         monthly_payment = self.get_monthly_payment()
         total_payments = monthly_payment * self.loan_term * 12
-        loan_amount = self.get_loan_amount()
         return total_payments - loan_amount
     
     def get_total_payback_amount(self) -> float:
@@ -279,16 +292,19 @@ class FinancialCalculator:
         }
         
         remaining_balance = loan_amount
-        
+
         for period in range(1, min(num_periods + 1, self.loan_term * 12 + 1)):
             if remaining_balance <= 0:
                 break
-            
-            # Calculate interest for this period
-            interest_payment = remaining_balance * monthly_rate
-            
-            # Calculate principal payment
-            principal_payment = min(monthly_payment - interest_payment, remaining_balance)
+
+            if self.interest_type == "simple":
+                interest_payment = loan_amount * (self.interest_rate / 100) / 12
+                principal_payment = min(monthly_payment - interest_payment, remaining_balance)
+            else:
+                # Calculate interest for this period
+                interest_payment = remaining_balance * monthly_rate
+                # Calculate principal payment
+                principal_payment = min(monthly_payment - interest_payment, remaining_balance)
             
             # Update remaining balance
             remaining_balance -= principal_payment

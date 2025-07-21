@@ -58,6 +58,7 @@ def calculate():
         down_payment = clean_numeric_input(data.get('down_payment', 0))
         loan_term = int(data.get('loan_term', 30))
         interest_rate = clean_numeric_input(data.get('interest_rate', 0))
+        interest_type = data.get('interest_type', 'apr')
         annual_rental_income = clean_numeric_input(data.get('base_monthly_rent', 0))  # This is actually annual income
         base_monthly_rent = annual_rental_income / 12  # Convert to monthly
         occupancy_rate = clean_numeric_input(data.get('occupancy_rate', 95))
@@ -75,6 +76,7 @@ def calculate():
             down_payment=down_payment,
             loan_term=loan_term,
             interest_rate=interest_rate,
+            interest_type=interest_type,
             base_monthly_rent=base_monthly_rent,
             occupancy_rate=occupancy_rate,
             rent_growth=rent_growth,
@@ -253,6 +255,7 @@ def create_calculator_from_data(data):
         down_payment=clean_numeric_input(data.get('down_payment', 0)),
         loan_term=int(data.get('loan_term', 30)),
         interest_rate=clean_numeric_input(data.get('interest_rate', 0)),
+        interest_type=data.get('interest_type', 'apr'),
         base_monthly_rent=base_monthly_rent,  # This is now correctly monthly
         occupancy_rate=clean_numeric_input(data.get('occupancy_rate', 95)),
         rent_growth=clean_numeric_input(data.get('rent_growth', 0)),
