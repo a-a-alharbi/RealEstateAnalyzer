@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}The Data Company — Real Estate Analyzer{% endblock %}
+{% block content %}
+<section class="row align-items-center g-4">
+  <div class="col-12 col-lg-6">
+    <h1 class="display-5 fw-bold">Real Estate Analyzer</h1>
+    <p class="lead text-secondary">
+      Evaluate deals with confidence. Enter assumptions, compare scenarios, and export investor-ready reports.
+    </p>
+    <div class="d-flex gap-3">
+      <a href="{{ url_for('analyzer') }}" class="btn btn-primary btn-lg">Launch Analyzer</a>
+      <a href="https://github.com/a-a-alharbi/RealEstateAnalyzer" class="btn btn-outline-secondary btn-lg" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+    <ul class="mt-4 list-unstyled small">
+      <li>• KPIs: Cash-on-Cash, IRR, DSCR, Cap Rate, Payback</li>
+      <li>• Yearly cash flow, equity build-up, rent vs. expenses</li>
+      <li>• Export to PDF / Excel</li>
+    </ul>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm p-3">
+      <img src="https://dummyimage.com/800x420/ededed/555.png&text=The+Data+Company+—+Real+Estate+Analyzer" class="img-fluid rounded" alt="Dashboard preview">
+    </div>
+  </div>
+</section>
+{% endblock %}

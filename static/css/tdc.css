@@ -1,0 +1,13 @@
+:root {
+  --tdc-primary: #1b5e8f;
+}
+
+.btn-primary,
+.bg-primary,
+.navbar .btn-primary {
+  background-color: var(--tdc-primary);
+  border-color: var(--tdc-primary);
+}
+
+.card { border-radius: 1rem; }
+.navbar { backdrop-filter: blur(6px); }
