@@ -80,8 +80,10 @@ def _compute_with_repo(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Di
     rents = [annual_rent * ((1 + rent_g) ** (y - 1)) for y in years]
     expenses = [r * opex_pct + insurance + hoa for r in rents]
     cashflows = [r - e - debt_service for r, e in zip(rents, expenses)]
+    monthly_cf = (sum(cashflows) / len(cashflows) / 12) if cashflows else 0.0
     metrics = {
-        "monthly_cash_flow": (sum(cashflows) / len(cashflows) / 12) if cashflows else 0.0,
+        "monthly_cash_flow": monthly_cf,
+        "annual_cash_flow": monthly_cf * 12,
         "cash_on_cash": 0.12,
         "irr": 0.11,
         "cap_rate": 0.065,
@@ -123,21 +125,15 @@ def dashboard():
         currency=form.get("currency", "SAR"),
         purchase_price=_to_float(form.get("purchase_price")),
         down_payment=_to_float(form.get("down_payment")),
-        closing_costs=_to_float(form.get("closing_costs")),
         interest_rate=_to_float(form.get("interest_rate")) / 100.0,
         loan_years=int(_to_float(form.get("loan_years"), 0)) or 0,
         annual_rent=_to_float(form.get("annual_rent")),
-        rent_growth=_to_float(form.get("rent_growth")) / 100.0,
-        vacancy_rate=_to_float(form.get("vacancy_rate")) / 100.0,
-        opex_percent=_to_float(form.get("opex_percent")) / 100.0,
-        insurance=_to_float(form.get("insurance")),
-        hoa=_to_float(form.get("hoa")),
-        rehab_cost=_to_float(form.get("rehab_cost")),
-        exit_year=int(_to_float(form.get("exit_year"), 10)) or 10,
-        exit_cap_rate=_to_float(form.get("exit_cap_rate")) / 100.0,
+        exit_year=10,
     )
 
     metrics, yearly = _compute_with_repo(payload)
+    if "annual_cash_flow" not in metrics and "monthly_cash_flow" in metrics:
+        metrics["annual_cash_flow"] = metrics["monthly_cash_flow"] * 12
 
     years = [row.get("year") for row in yearly]
     rents = [float(row.get("rent", 0)) for row in yearly]
