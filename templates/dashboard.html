@@ -10,6 +10,7 @@
 <div class="row g-3 mb-3">
   {% for kpi in [
     ('Cash Flow / Mo', metrics.monthly_cash_flow),
+    ('Cash Flow / Yr', metrics.annual_cash_flow),
     ('Cash-on-Cash', metrics.cash_on_cash),
     ('IRR', metrics.irr),
     ('Cap Rate', metrics.cap_rate),
@@ -22,7 +23,13 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <div class="text-secondary">{{ kpi[0] }}</div>
-        <div class="fs-4 fw-bold">
+        {% set cls = '' %}
+        {% if 'Cash Flow' in kpi[0] or 'NOI' in kpi[0] %}
+          {% set cls = 'text-danger' if kpi[1] < 0 else 'text-success' %}
+        {% elif kpi[0] == 'DSCR' %}
+          {% set cls = 'text-danger' if kpi[1] < 1 else 'text-success' %}
+        {% endif %}
+        <div class="fs-4 fw-bold {{ cls }}">
           {% if 'Rate' in kpi[0] or 'ROI' in kpi[0] or 'Cash-on-Cash' in kpi[0] or 'IRR' in kpi[0] %}
             {{ (kpi[1] * 100) | round(1) }}%
           {% elif 'Payback' in kpi[0] %}
@@ -79,9 +86,9 @@
           <td>{{ r.year }}</td>
           <td class="text-end">{{ currency_symbol }}{{ "{:,.0f}".format(r.rent) }}</td>
           <td class="text-end">{{ currency_symbol }}{{ "{:,.0f}".format(r.expenses) }}</td>
-          <td class="text-end">{{ currency_symbol }}{{ "{:,.0f}".format(r.noi) }}</td>
+          <td class="text-end {{ 'text-danger' if r.noi < 0 else '' }}">{{ currency_symbol }}{{ "{:,.0f}".format(r.noi) }}</td>
           <td class="text-end">{{ currency_symbol }}{{ "{:,.0f}".format(r.debt_service) }}</td>
-          <td class="text-end">{{ currency_symbol }}{{ "{:,.0f}".format(r.cash_flow) }}</td>
+          <td class="text-end {{ 'text-danger' if r.cash_flow < 0 else 'text-success' }}">{{ currency_symbol }}{{ "{:,.0f}".format(r.cash_flow) }}</td>
           <td class="text-end">{{ currency_symbol }}{{ "{:,.0f}".format(r.equity) }}</td>
         </tr>
         {% endfor %}
