@@ -15,34 +15,18 @@ from flask import (
 )
 
 import io
+import tempfile
 
-# ----- Optional, use real implementations if available -----
-try:
-    import utils as U  # your helper utilities
-except Exception:
-    U = None  # type: ignore
-
-try:
-    import financial_calculator as FC  # your compute engine
-except Exception:
-    FC = None  # type: ignore
-
-try:
-    import report_generator as RG  # PDF/Excel
-except Exception:
-    RG = None  # type: ignore
-# -----------------------------------------------------------
+from helpers import format_currency, format_percentage
+from financial_calculator import FinancialCalculator
+from utils import get_advanced_metrics, export_to_excel
+from report_generator import generate_pdf_report
 
 app = Flask(__name__)
 app.secret_key = "change-me"  # needed for session to keep last results
 
 
 def _currency_symbol(code: str) -> str:
-    if U and hasattr(U, "currency_symbol_for"):
-        try:
-            return U.currency_symbol_for(code)  # type: ignore[attr-defined]
-        except Exception:
-            pass
     return {"SAR": "﷼", "USD": "$", "EUR": "€", "GBP": "£"}.get(code.upper(), "")
 
 
@@ -56,52 +40,61 @@ def _to_float(v: Any, default: float = 0.0) -> float:
 
 
 def _compute_with_repo(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    # Try your own compute functions first
-    if FC:
-        if hasattr(FC, "calculate_metrics"):
-            res = FC.calculate_metrics(payload)  # type: ignore[attr-defined]
-            if isinstance(res, tuple) and len(res) == 2:
-                return res  # type: ignore[return-value]
-            if isinstance(res, dict):
-                return res["metrics"], res["yearly"]  # type: ignore[index]
-        if hasattr(FC, "run"):
-            out = FC.run(payload)  # type: ignore[attr-defined]
-            return out["metrics"], out["yearly"]  # type: ignore[index]
+    """Use the main branch's FinancialCalculator for analysis."""
+    calc = FinancialCalculator(
+        property_price=payload["purchase_price"],
+        down_payment=payload["down_payment"],
+        loan_term=payload["loan_years"],
+        interest_rate=payload["interest_rate"] * 100,
+        base_monthly_rent=payload["annual_rent"] / 12,
+        occupancy_rate=(1 - payload["vacancy_rate"]) * 100,
+        rent_growth=payload["rent_growth"] * 100,
+        enhancement_costs=payload["rehab_cost"],
+        hoa_fees_annual=payload["hoa"],
+        holding_period=payload["exit_year"],
+    )
 
-    # Fallback demo compute (UI always renders)
-    years = list(range(1, int(payload.get("exit_year", 10)) + 1))
-    annual_rent = float(payload.get("annual_rent", 0))
-    rent_g = float(payload.get("rent_growth", 0))
-    opex_pct = float(payload.get("opex_percent", 0))
-    insurance = float(payload.get("insurance", 0))
-    hoa = float(payload.get("hoa", 0))
-    debt_service = 50_000.0
+    scenarios = calc.get_scenario_analysis()
+    advanced = get_advanced_metrics(calc)
 
-    rents = [annual_rent * ((1 + rent_g) ** (y - 1)) for y in years]
-    expenses = [r * opex_pct + insurance + hoa for r in rents]
-    cashflows = [r - e - debt_service for r, e in zip(rents, expenses)]
+    annual_debt_service = calc.get_monthly_payment() * 12
+    amort = calc.get_amortization_schedule(payload["exit_year"] * 12)
+    principals = amort["principal"]
+
+    equity = payload["down_payment"] + payload["rehab_cost"]
+    yearly: List[Dict[str, Any]] = []
+    for year in range(1, payload["exit_year"] + 1):
+        rent = calc.get_effective_monthly_rent_for_year(year) * 12
+        expenses = rent * payload["opex_percent"] + payload["insurance"] + payload["hoa"]
+        noi = rent - expenses
+        cash_flow = noi - annual_debt_service
+        principal_paid = sum(principals[(year - 1) * 12 : year * 12])
+        equity += principal_paid
+        yearly.append(
+            {
+                "year": year,
+                "rent": rent,
+                "expenses": expenses,
+                "noi": noi,
+                "debt_service": annual_debt_service,
+                "cash_flow": cash_flow,
+                "equity": equity,
+            }
+        )
+
+    base = scenarios["base"]
     metrics = {
-        "monthly_cash_flow": (sum(cashflows) / len(cashflows) / 12) if cashflows else 0.0,
-        "cash_on_cash": 0.12,
-        "irr": 0.11,
-        "cap_rate": 0.065,
-        "dscr": 1.25,
-        "payback_years": 8.4,
-        "total_roi": 0.82,
-        "noi_y1": (rents[0] - expenses[0]) if rents else 0.0,
+        "monthly_cash_flow": base["monthly_cash_flow"],
+        "annual_cash_flow": base["annual_cash_flow"],
+        "cash_on_cash": advanced["cash_on_cash_return"] / 100,
+        "irr": (base["irr"] or 0) / 100,
+        "cap_rate": advanced["cap_rate"] / 100,
+        "dscr": advanced["dscr"],
+        "payback_years": advanced["payback_period"],
+        "total_roi": base["roi"] / 100,
+        "noi_y1": base["net_income_schedule"][0] if base["net_income_schedule"] else 0,
     }
-    yearly = [
-        {
-            "year": y,
-            "rent": rents[y - 1],
-            "expenses": expenses[y - 1],
-            "noi": rents[y - 1] - expenses[y - 1],
-            "debt_service": debt_service,
-            "cash_flow": cashflows[y - 1],
-            "equity": 100_000 + 20_000 * (y - 1),
-        }
-        for y in years
-    ]
+
     return metrics, yearly
 
 
@@ -177,30 +170,42 @@ def export_pdf():
         flash("Run an analysis first.")
         return redirect(url_for("landing"))
 
-    if RG and hasattr(RG, "generate_pdf"):
-        try:
-            pdf_bytes = RG.generate_pdf(results)  # type: ignore[attr-defined]
+    payload = results["payload"]
+    try:
+        calc = FinancialCalculator(
+            property_price=payload["purchase_price"],
+            down_payment=payload["down_payment"],
+            loan_term=payload["loan_years"],
+            interest_rate=payload["interest_rate"] * 100,
+            base_monthly_rent=payload["annual_rent"] / 12,
+            occupancy_rate=(1 - payload["vacancy_rate"]) * 100,
+            rent_growth=payload["rent_growth"] * 100,
+            enhancement_costs=payload["rehab_cost"],
+            hoa_fees_annual=payload["hoa"],
+            holding_period=payload["exit_year"],
+        )
+        scenarios = calc.get_scenario_analysis()
+        advanced = get_advanced_metrics(calc)
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            generate_pdf_report(
+                {
+                    "calculator": calc,
+                    "scenarios": scenarios,
+                    "advanced_metrics": advanced,
+                },
+                tmp.name,
+            )
+            tmp.flush()
             return send_file(
-                io.BytesIO(pdf_bytes),
+                tmp.name,
                 mimetype="application/pdf",
                 as_attachment=True,
                 download_name="RealEstateAnalyzer.pdf",
             )
-        except Exception as e:
-            flash(f"PDF export failed: {e}")
-            return redirect(url_for("landing"))
-
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
-
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    c.drawString(72, 800, "Real Estate Analyzer — PDF export placeholder")
-    c.drawString(72, 780, f"As of: {results['as_of']}")
-    c.drawString(72, 760, f"Cash-on-Cash: {results['metrics'].get('cash_on_cash', 0):.2%}")
-    c.save()
-    buf.seek(0)
-    return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name="RealEstateAnalyzer.pdf")
+    except Exception as e:
+        flash(f"PDF export failed: {e}")
+        return redirect(url_for("landing"))
 
 
 @app.route("/export/excel")
@@ -210,28 +215,54 @@ def export_excel():
         flash("Run an analysis first.")
         return redirect(url_for("landing"))
 
-    if RG and hasattr(RG, "generate_excel"):
-        try:
-            xlsx_bytes = RG.generate_excel(results)  # type: ignore[attr-defined]
-            return send_file(
-                io.BytesIO(xlsx_bytes),
-                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                as_attachment=True,
-                download_name="RealEstateAnalyzer.xlsx",
+    payload = results["payload"]
+    try:
+        import pandas as pd
+
+        calc = FinancialCalculator(
+            property_price=payload["purchase_price"],
+            down_payment=payload["down_payment"],
+            loan_term=payload["loan_years"],
+            interest_rate=payload["interest_rate"] * 100,
+            base_monthly_rent=payload["annual_rent"] / 12,
+            occupancy_rate=(1 - payload["vacancy_rate"]) * 100,
+            rent_growth=payload["rent_growth"] * 100,
+            enhancement_costs=payload["rehab_cost"],
+            hoa_fees_annual=payload["hoa"],
+            holding_period=payload["exit_year"],
+        )
+        scenarios = calc.get_scenario_analysis()
+
+        scenario_data = []
+        for key, name in [
+            ("conservative", "Conservative"),
+            ("base", "Base"),
+            ("optimistic", "Optimistic"),
+        ]:
+            s = scenarios[key]
+            scenario_data.append(
+                {
+                    "Scenario": name,
+                    "Monthly Cash Flow": format_currency(s["monthly_cash_flow"]),
+                    "Annual Cash Flow": format_currency(s["annual_cash_flow"]),
+                    "Annual ROI": format_percentage(s["roi"]),
+                    "Monthly Rent": format_currency(s["monthly_rent"]),
+                    "IRR": format_percentage(s["irr"]) if s["irr"] else "N/A",
+                }
             )
-        except Exception as e:
-            flash(f"Excel export failed: {e}")
-            return redirect(url_for("landing"))
 
-    import csv
-
-    buf = io.StringIO()
-    writer = csv.writer(buf)
-    writer.writerow(["Year", "Rent", "Expenses", "NOI", "Debt Service", "Cash Flow", "Equity"])
-    for r in results["yearly"]:
-        writer.writerow([r["year"], r["rent"], r["expenses"], r["noi"], r["debt_service"], r["cash_flow"], r["equity"]])
-    data = io.BytesIO(buf.getvalue().encode("utf-8"))
-    return send_file(data, mimetype="text/csv", as_attachment=True, download_name="RealEstateAnalyzer.csv")
+        scenario_df = pd.DataFrame(scenario_data)
+        buffer = export_to_excel(calc, scenarios, scenario_df)
+        buffer.seek(0)
+        return send_file(
+            buffer,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name="RealEstateAnalyzer.xlsx",
+        )
+    except Exception as e:
+        flash(f"Excel export failed: {e}")
+        return redirect(url_for("landing"))
 
 
 if __name__ == "__main__":
