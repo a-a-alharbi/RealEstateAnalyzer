@@ -44,6 +44,56 @@
   {% endfor %}
 </div>
 
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white"><strong>Scenario Analysis</strong></div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Scenario</th>
+          <th class="text-end">Monthly Rent</th>
+          <th class="text-end">Monthly Cash Flow</th>
+          <th class="text-end">Annual Cash Flow</th>
+          <th class="text-end">ROI (%)</th>
+          <th class="text-end">IRR (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in scenario_rows %}
+        <tr>
+          <td>{{ row.scenario }}</td>
+          <td class="text-end">{{ currency_symbol }}{{ "{:,.0f}".format(row.monthly_rent) }}</td>
+          <td class="text-end {{ 'text-danger' if row.monthly_cash_flow < 0 else 'text-success' }}">{{ currency_symbol }}{{ "{:,.0f}".format(row.monthly_cash_flow) }}</td>
+          <td class="text-end {{ 'text-danger' if row.annual_cash_flow < 0 else 'text-success' }}">{{ currency_symbol }}{{ "{:,.0f}".format(row.annual_cash_flow) }}</td>
+          <td class="text-end">{{ row.roi|round(1) }}</td>
+          <td class="text-end">{{ row.irr|round(1) if row.irr is not none else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-xl-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><strong>ROI Comparison by Scenario</strong></div>
+      <div class="card-body"><div id="roiChart" style="height:360px;"></div></div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><strong>Monthly Cash Flow Analysis</strong></div>
+      <div class="card-body"><div id="monthlyCashFlowChart" style="height:360px;"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white"><strong>Cash Flow Performance</strong></div>
+  <div class="card-body"><div id="cashFlowPerformanceChart" style="height:360px;"></div></div>
+</div>
+
 <div class="row g-3">
   <div class="col-12 col-xl-8">
     <div class="card shadow-sm h-100">
@@ -112,6 +162,27 @@
   Plotly.newPlot('rentExpensesChart', [
     { x: years, y: rent, type: 'scatter', mode: 'lines+markers', name: 'Rent' },
     { x: years, y: exp,  type: 'scatter', mode: 'lines+markers', name: 'Expenses' },
+  ], { margin: {t: 20} }, {responsive: true});
+
+  const roiLabels = {{ roi_labels|tojson }};
+  const roiValues = {{ roi_values|tojson }};
+  Plotly.newPlot('roiChart', [
+    { x: roiLabels, y: roiValues, type: 'bar' }
+  ], { margin: {t: 20}, yaxis: {title: 'ROI (%)'} }, {responsive: true});
+
+  const monthsArr = {{ months|tojson }};
+  const rentalIncome = {{ rental_income_series|tojson }};
+  const mortgage = {{ mortgage_payment_series|tojson }};
+  const hoaFees = {{ hoa_fees_series|tojson }};
+  Plotly.newPlot('monthlyCashFlowChart', [
+    { x: monthsArr, y: rentalIncome, type: 'bar', name: 'Rental Income' },
+    { x: monthsArr, y: mortgage, type: 'bar', name: 'Mortgage Payment' },
+    { x: monthsArr, y: hoaFees, type: 'bar', name: 'HOA Fees' },
+  ], { margin: {t: 20}, barmode: 'stack' }, {responsive: true});
+
+  const cumulativeCash = {{ cumulative_cash|tojson }};
+  Plotly.newPlot('cashFlowPerformanceChart', [
+    { x: years, y: cumulativeCash, type: 'scatter', mode: 'lines+markers', name: 'Cumulative Cash Flow' }
   ], { margin: {t: 20} }, {responsive: true});
 </script>
 {% endblock %}

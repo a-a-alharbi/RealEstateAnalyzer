@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any, Dict, List, Tuple
+from itertools import accumulate
 
 from flask import (
     Flask,
@@ -39,7 +40,7 @@ def _to_float(v: Any, default: float = 0.0) -> float:
         return default
 
 
-def _compute_with_repo(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+def _compute_with_repo(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any]]:
     """Use the main branch's FinancialCalculator for analysis."""
     calc = FinancialCalculator(
         property_price=payload["purchase_price"],
@@ -52,6 +53,7 @@ def _compute_with_repo(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Di
         enhancement_costs=payload["rehab_cost"],
         hoa_fees_annual=payload["hoa"],
         holding_period=payload["exit_year"],
+        interest_type=payload["interest_type"],
     )
 
     scenarios = calc.get_scenario_analysis()
@@ -95,7 +97,7 @@ def _compute_with_repo(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Di
         "noi_y1": base["net_income_schedule"][0] if base["net_income_schedule"] else 0,
     }
 
-    return metrics, yearly
+    return metrics, yearly, scenarios
 
 
 @app.route("/")
@@ -112,30 +114,68 @@ def analyzer():
 def dashboard():
     form = request.form
 
+    property_price = _to_float(form.get("property_price"))
+    down_payment_percent = _to_float(form.get("down_payment_percent"))
+    down_payment = property_price * down_payment_percent / 100.0
+
     payload = dict(
         currency=form.get("currency", "SAR"),
-        purchase_price=_to_float(form.get("purchase_price")),
-        down_payment=_to_float(form.get("down_payment")),
+        purchase_price=property_price,
+        down_payment=down_payment,
         closing_costs=_to_float(form.get("closing_costs")),
-        interest_rate=_to_float(form.get("interest_rate")) / 100.0,
-        loan_years=int(_to_float(form.get("loan_years"), 0)) or 0,
-        annual_rent=_to_float(form.get("annual_rent")),
+        interest_rate=_to_float(form.get("interest_rate_percent")) / 100.0,
+        loan_years=int(_to_float(form.get("loan_term_years"), 0)) or 0,
+        annual_rent=_to_float(form.get("annual_rental_income")),
         rent_growth=_to_float(form.get("rent_growth")) / 100.0,
         vacancy_rate=_to_float(form.get("vacancy_rate")) / 100.0,
         opex_percent=_to_float(form.get("opex_percent")) / 100.0,
         insurance=_to_float(form.get("insurance")),
         hoa=_to_float(form.get("hoa")),
-        rehab_cost=_to_float(form.get("rehab_cost")),
+        rehab_cost=_to_float(form.get("enhancement_costs")),
         exit_year=int(_to_float(form.get("exit_year"), 10)) or 10,
         exit_cap_rate=_to_float(form.get("exit_cap_rate")) / 100.0,
+        interest_type=form.get("interest_type", "apr"),
     )
 
-    metrics, yearly = _compute_with_repo(payload)
+    metrics, yearly, scenarios = _compute_with_repo(payload)
 
     years = [row.get("year") for row in yearly]
     rents = [float(row.get("rent", 0)) for row in yearly]
     expenses = [float(row.get("expenses", 0)) for row in yearly]
     cashflows = [float(row.get("cash_flow", 0)) for row in yearly]
+
+    scenario_rows = []
+    for key, name in [
+        ("conservative", "Conservative"),
+        ("base", "Base"),
+        ("optimistic", "Optimistic"),
+    ]:
+        s = scenarios[key]
+        scenario_rows.append(
+            {
+                "scenario": name,
+                "monthly_rent": s["monthly_rent"],
+                "monthly_cash_flow": s["monthly_cash_flow"],
+                "annual_cash_flow": s["annual_cash_flow"],
+                "roi": s["roi"],
+                "irr": s["irr"],
+            }
+        )
+
+    roi_labels = [row["scenario"] for row in scenario_rows]
+    roi_values = [row["roi"] for row in scenario_rows]
+
+    base = scenarios["base"]
+    monthly_rent = base["effective_monthly_rent"]
+    monthly_cash_flow = base["monthly_cash_flow"]
+    monthly_hoa = payload["hoa"] / 12.0
+    mortgage_payment = monthly_rent - monthly_cash_flow - monthly_hoa
+    months = list(range(1, 13))
+    rental_income_series = [monthly_rent] * 12
+    mortgage_payment_series = [mortgage_payment] * 12
+    hoa_fees_series = [monthly_hoa] * 12
+
+    cumulative_cash = list(accumulate(cashflows))
 
     results = dict(
         as_of=date.today().isoformat(),
@@ -146,6 +186,14 @@ def dashboard():
         rents=rents,
         expenses=expenses,
         cashflows=cashflows,
+        scenario_rows=scenario_rows,
+        roi_labels=roi_labels,
+        roi_values=roi_values,
+        months=months,
+        rental_income_series=rental_income_series,
+        mortgage_payment_series=mortgage_payment_series,
+        hoa_fees_series=hoa_fees_series,
+        cumulative_cash=cumulative_cash,
         payload=payload,
     )
 
@@ -160,6 +208,14 @@ def dashboard():
         rents=results["rents"],
         expenses=results["expenses"],
         cashflows=results["cashflows"],
+        scenario_rows=results["scenario_rows"],
+        roi_labels=results["roi_labels"],
+        roi_values=results["roi_values"],
+        months=results["months"],
+        rental_income_series=results["rental_income_series"],
+        mortgage_payment_series=results["mortgage_payment_series"],
+        hoa_fees_series=results["hoa_fees_series"],
+        cumulative_cash=results["cumulative_cash"],
     )
 
 
@@ -183,6 +239,7 @@ def export_pdf():
             enhancement_costs=payload["rehab_cost"],
             hoa_fees_annual=payload["hoa"],
             holding_period=payload["exit_year"],
+            interest_type=payload.get("interest_type", "apr"),
         )
         scenarios = calc.get_scenario_analysis()
         advanced = get_advanced_metrics(calc)
@@ -230,6 +287,7 @@ def export_excel():
             enhancement_costs=payload["rehab_cost"],
             hoa_fees_annual=payload["hoa"],
             holding_period=payload["exit_year"],
+            interest_type=payload.get("interest_type", "apr"),
         )
         scenarios = calc.get_scenario_analysis()
 
