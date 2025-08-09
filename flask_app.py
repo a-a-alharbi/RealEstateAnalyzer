@@ -86,15 +86,14 @@ def _compute_with_repo(payload: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Di
 
     base = scenarios["base"]
     metrics = {
+        "total_investment": advanced["total_initial_investment"],
         "monthly_cash_flow": base["monthly_cash_flow"],
         "annual_cash_flow": base["annual_cash_flow"],
         "cash_on_cash": advanced["cash_on_cash_return"] / 100,
         "irr": (base["irr"] or 0) / 100,
-        "cap_rate": advanced["cap_rate"] / 100,
         "dscr": advanced["dscr"],
         "payback_years": advanced["payback_period"],
         "total_roi": base["roi"] / 100,
-        "noi_y1": base["net_income_schedule"][0] if base["net_income_schedule"] else 0,
     }
 
     return metrics, yearly, scenarios
