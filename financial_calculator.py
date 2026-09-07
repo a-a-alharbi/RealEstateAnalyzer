@@ -3,15 +3,7 @@
 from typing import Dict, Optional, Any
 import math
 
-# These packages are optional. They are only required for advanced
-# calculations like IRR. Import them lazily so the module can still be
-# imported even if the dependencies are missing (e.g. in constrained
-# test environments).
-try:
-    import numpy as np  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    np = None  # type: ignore
-
+# This package is optional and is only required for IRR calculations.
 try:
     import numpy_financial as npf  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
@@ -35,7 +27,8 @@ class FinancialCalculator:
         hoa_fees_annual: float = 0,
         holding_period: int = 10,
         resale_value: Optional[float] = None,
-        interest_type: str = "apr"
+        interest_type: str = "apr",
+        operating_expenses_annual: float = 0,
     ):
         self.property_price = property_price
         self.down_payment = down_payment
@@ -47,8 +40,9 @@ class FinancialCalculator:
         self.rent_growth = rent_growth
         self.enhancement_costs = enhancement_costs
         self.hoa_fees_annual = hoa_fees_annual
+        self.operating_expenses_annual = operating_expenses_annual
         self.holding_period = holding_period
-        self.resale_value = resale_value or property_price * 1.2
+        self.resale_value = property_price * 1.2 if resale_value is None else resale_value
         
         # Validate inputs
         self._validate_inputs()
@@ -71,6 +65,14 @@ class FinancialCalculator:
             raise ValueError("Occupancy rate must be between 0 and 100")
         if self.rent_growth < 0:
             raise ValueError("Rent growth cannot be negative")
+        if self.enhancement_costs < 0:
+            raise ValueError("Enhancement costs cannot be negative")
+        if self.hoa_fees_annual < 0 or self.operating_expenses_annual < 0:
+            raise ValueError("Annual expenses cannot be negative")
+        if self.holding_period <= 0:
+            raise ValueError("Holding period must be positive")
+        if self.resale_value < 0:
+            raise ValueError("Resale value cannot be negative")
     
     def get_loan_amount(self) -> float:
         """Calculate the loan amount."""
@@ -118,6 +120,22 @@ class FinancialCalculator:
     def get_total_initial_investment(self) -> float:
         """Calculate total initial investment."""
         return self.down_payment + self.enhancement_costs
+
+    def get_remaining_loan_balance(self, after_months: int) -> float:
+        """Return the outstanding principal after a number of payments."""
+        if after_months < 0:
+            raise ValueError("Months cannot be negative")
+        loan_amount = self.get_loan_amount()
+        total_months = self.loan_term * 12
+        if loan_amount <= 0 or after_months >= total_months:
+            return 0.0
+        if after_months == 0:
+            return loan_amount
+        return self.get_amortization_schedule(after_months)['balance'][-1]
+
+    def get_annual_debt_service_for_year(self, year: int) -> float:
+        """Return mortgage payments due in a given 1-indexed holding year."""
+        return self.get_monthly_payment() * 12 if 1 <= year <= self.loan_term else 0.0
     
     def get_effective_monthly_rent(self, rent_multiplier: float = 1.0) -> float:
         """Calculate effective monthly rent considering occupancy rate."""
@@ -140,13 +158,13 @@ class FinancialCalculator:
 
     def get_monthly_cash_flow_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
         effective_rent = self.get_effective_monthly_rent_for_year(year, rent_multiplier)
-        monthly_payment = self.get_monthly_payment()
-        monthly_hoa = self.hoa_fees_annual / 12
-        return effective_rent - monthly_payment - monthly_hoa
+        monthly_payment = self.get_annual_debt_service_for_year(year) / 12
+        monthly_expenses = (self.hoa_fees_annual + self.operating_expenses_annual) / 12
+        return effective_rent - monthly_payment - monthly_expenses
 
     def get_annual_net_income_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
         effective_rent = self.get_effective_monthly_rent_for_year(year, rent_multiplier)
-        return effective_rent * 12 - self.hoa_fees_annual
+        return effective_rent * 12 - self.hoa_fees_annual - self.operating_expenses_annual
 
     def get_annual_cash_flow_for_year(self, year: int, rent_multiplier: float = 1.0) -> float:
         return self.get_monthly_cash_flow_for_year(year, rent_multiplier) * 12
@@ -161,15 +179,15 @@ class FinancialCalculator:
         """Calculate monthly cash flow."""
         effective_rent = self.get_effective_monthly_rent(rent_multiplier)
         monthly_payment = self.get_monthly_payment()
-        monthly_hoa = self.hoa_fees_annual / 12
+        monthly_expenses = (self.hoa_fees_annual + self.operating_expenses_annual) / 12
         
-        return effective_rent - monthly_payment - monthly_hoa
+        return effective_rent - monthly_payment - monthly_expenses
     
     def get_annual_net_income(self, rent_multiplier: float = 1.0) -> float:
         """Calculate annual net rental income (before mortgage)."""
         effective_rent = self.get_effective_monthly_rent(rent_multiplier)
         annual_rent = effective_rent * 12
-        return annual_rent - self.hoa_fees_annual
+        return annual_rent - self.hoa_fees_annual - self.operating_expenses_annual
     
     def get_annual_cash_flow(self, rent_multiplier: float = 1.0) -> float:
         """Calculate annual cash flow (after mortgage)."""
@@ -202,8 +220,9 @@ class FinancialCalculator:
             initial_investment = -self.get_total_initial_investment()
 
             cash_flows = [self.get_annual_cash_flow_for_year(y, rent_multiplier) for y in range(1, self.holding_period + 1)]
-            # Add resale proceeds in final year
-            cash_flows[-1] += self.resale_value - self.property_price
+            # Add net sale proceeds after repaying the outstanding mortgage.
+            remaining_balance = self.get_remaining_loan_balance(self.holding_period * 12)
+            cash_flows[-1] += self.resale_value - remaining_balance
 
             # Combine initial investment with cash flows
             all_cash_flows = [initial_investment] + cash_flows
@@ -339,5 +358,6 @@ class FinancialCalculator:
             'irr': base_scenario['irr'],
             'holding_period': self.holding_period,
             'expected_resale_value': self.resale_value,
-            'expected_capital_gain': self.resale_value - self.property_price
+            'expected_capital_gain': self.resale_value - self.property_price,
+            'operating_expenses_annual': self.operating_expenses_annual,
         }

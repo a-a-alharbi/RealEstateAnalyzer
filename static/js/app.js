@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function calculateInvestment() {
+        document.getElementById('form-error').hidden = true;
         // Show loading, hide other sections
         loading.style.display = 'block';
         results.style.display = 'none';
@@ -348,14 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function initializeTooltips() {
-        // Initialize Bootstrap tooltips
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    }
-
     function createCashFlowChart(cashFlowData, breakEvenAmount) {
         const traces = [];
         const colors = {
@@ -537,13 +530,15 @@ document.addEventListener('DOMContentLoaded', function() {
                               window.currentData.calculator_data.monthly_payment : 0;
         const monthlyHOA = window.currentData && window.currentData.calculator_data ? 
                           (window.currentData.calculator_data.hoa_fees_annual || 0) / 12 : 0;
+        const monthlyOperatingExpenses = window.currentData && window.currentData.calculator_data ?
+                          (window.currentData.calculator_data.operating_expenses_annual || 0) / 12 : 0;
         
         const data = [{
-            x: ['Rental Income', 'Mortgage Payment', 'HOA Fees', 'Net Cash Flow'],
-            y: [effectiveRent, -monthlyPayment, -monthlyHOA, baseScenario.monthly_cash_flow],
+            x: ['Rental Income', 'Mortgage Payment', 'HOA Fees', 'Other Expenses', 'Net Cash Flow'],
+            y: [effectiveRent, -monthlyPayment, -monthlyHOA, -monthlyOperatingExpenses, baseScenario.monthly_cash_flow],
             type: 'bar',
             marker: {
-                color: ['#34A853', '#EA4335', '#FFA500', baseScenario.monthly_cash_flow >= 0 ? '#4285F4' : '#EA4335']
+                color: ['#34A853', '#EA4335', '#FFA500', '#6C757D', baseScenario.monthly_cash_flow >= 0 ? '#4285F4' : '#EA4335']
             }
         }];
 
@@ -760,7 +755,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showError(message) {
-        alert('Error: ' + message);
+        const errorBox = document.getElementById('form-error');
+        errorBox.textContent = message;
+        errorBox.hidden = false;
         welcome.style.display = 'block';
     }
 

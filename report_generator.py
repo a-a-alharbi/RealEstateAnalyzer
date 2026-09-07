@@ -139,6 +139,7 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str) -> str:
         {'label': 'Loan Amount', 'value': format_currency(calc.get_loan_amount())},
         {'label': 'Interest Rate', 'value': f"{calc.interest_rate:.2f}% ({calc.interest_type.title()})"},
         {'label': 'Loan Term', 'value': f"{calc.loan_term} years"},
+        {'label': 'Annual Operating Expenses', 'value': format_currency(calc.operating_expenses_annual)},
         {'label': 'Total Initial Investment', 'value': format_currency(calc.get_total_initial_investment())},
     ]
 

@@ -22,7 +22,7 @@
                     <form id="calculatorForm">
                         <div class="form-group">
                             <label for="property_price">Property Price (SAR)</label>
-                            <input type="text" class="form-control currency-input" id="property_price" name="property_price" value="1,875,000" data-value="1875000">
+                            <input type="text" class="form-control currency-input" id="property_price" name="property_price" value="1,875,000" data-value="1875000" required inputmode="numeric">
                             <small class="form-text text-muted">Total property purchase price</small>
                         </div>
                         
@@ -57,7 +57,7 @@
                         
                         <div class="form-group">
                             <label for="interest_rate">Interest Rate (%)</label>
-                            <input type="number" class="form-control" id="interest_rate" name="interest_rate" value="6.5" step="0.0000000001">
+                            <input type="number" class="form-control" id="interest_rate" name="interest_rate" value="6.5" min="0" step="0.01" required>
                         </div>
                         <div class="form-group">
                             <label for="interest_type">Interest Type</label>
@@ -83,7 +83,7 @@
 
                         <div class="form-group">
                             <label for="rent_growth">Rent Growth % (optional)</label>
-                            <input type="number" class="form-control" id="rent_growth" name="rent_growth" value="0" step="0.1">
+                            <input type="number" class="form-control" id="rent_growth" name="rent_growth" value="0" min="0" step="0.1">
                             <small class="form-text text-muted">Annual rent escalation rate</small>
                         </div>
 
@@ -91,6 +91,12 @@
                             <label for="hoa_fees_annual">HOA Fees (Annual, SAR)</label>
                             <input type="text" class="form-control currency-input" id="hoa_fees_annual" name="hoa_fees_annual" value="0" data-value="0">
                             <small class="form-text text-muted">Annual homeowners association fees</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="operating_expenses_annual">Other Operating Expenses (Annual, SAR)</label>
+                            <input type="text" class="form-control currency-input" id="operating_expenses_annual" name="operating_expenses_annual" value="0" data-value="0" inputmode="numeric">
+                            <small class="form-text text-muted">Insurance, maintenance, taxes, management, and reserves</small>
                         </div>
                         
                         <h4><i class="fas fa-clock"></i> Investment Period</h4>
@@ -113,6 +119,7 @@
                             <small class="form-text text-muted">Auto-calculated using 2.5% annual appreciation</small>
                         </div>
                         
+                        <div id="form-error" class="alert alert-danger py-2" role="alert" aria-live="polite" hidden></div>
                         <button type="submit" class="btn btn-primary btn-block">
                             <i class="fas fa-calculator"></i> Calculate Investment Metrics
                         </button>

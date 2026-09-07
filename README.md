@@ -8,6 +8,8 @@ RealEstateAnalyzer is a Flask-based application for evaluating real estate inves
 - Interactive dashboard built with HTML, Bootstrap and Plotly
 - Excel and PDF report export with embedded charts (PDFs generated via WeasyPrint)
 - Scenario analysis (conservative, base and optimistic)
+- Operating-expense modeling for insurance, maintenance, taxes, management and reserves
+- Mortgage-aware sale proceeds and cash-flow projections that stop debt service after payoff
 
 ## Installation
 
@@ -42,3 +44,11 @@ The **Rent Growth % (optional)** field allows you to model annual rent escalatio
 Enter a yearly percentage (e.g., `3` for 3% growth). If left at `0`, rents remain
 flat. When a rate is provided, rents compound each year and all cash flow metrics,
 ROI, IRR, payback period and charts will reflect the increasing income.
+
+### Modeling Expenses
+
+Use **HOA Fees** for association charges and **Other Operating Expenses** for the
+annual total of insurance, maintenance, property taxes, management fees and cash
+reserves. These expenses reduce net operating income, cash flow, cap rate, ROI and
+IRR. The analyzer is an investment-screening aid; verify taxes, financing terms,
+closing costs and sale costs for the specific property before making a decision.

@@ -1,19 +1,11 @@
 from flask import Flask, render_template, request, jsonify, send_file
 import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.utils
-import json
 import math
-import io
 import os
 import tempfile
 from financial_calculator import FinancialCalculator
 from utils import (
-    format_currency, format_percentage, format_currency_with_color,
-    format_percentage_with_color, export_to_excel, get_advanced_metrics
+    format_currency, format_percentage, export_to_excel, get_advanced_metrics
 )
 from report_generator import generate_pdf_report
 
@@ -50,41 +42,11 @@ def calculate():
     """Process calculation and return results"""
     try:
         # Get form data
-        data = request.get_json()
-        print(f"Received data: {data}")  # Debug logging
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("A JSON request body is required")
         
-        # Extract and clean parameters
-        property_price = clean_numeric_input(data.get('property_price', 0))
-        down_payment = clean_numeric_input(data.get('down_payment', 0))
-        loan_term = int(data.get('loan_term', 30))
-        interest_rate = clean_numeric_input(data.get('interest_rate', 0))
-        interest_type = data.get('interest_type', 'apr')
-        annual_rental_income = clean_numeric_input(data.get('base_monthly_rent', 0))  # This is actually annual income
-        base_monthly_rent = annual_rental_income / 12  # Convert to monthly
-        occupancy_rate = clean_numeric_input(data.get('occupancy_rate', 95))
-        rent_growth = clean_numeric_input(data.get('rent_growth', 0))
-        enhancement_costs = clean_numeric_input(data.get('enhancement_costs', 0))
-        hoa_fees_annual = clean_numeric_input(data.get('hoa_fees_annual', 0))
-        holding_period = int(data.get('holding_period', 10))
-        resale_value = clean_numeric_input(data.get('resale_value', 0))
-        
-        print(f"Processed values: price={property_price}, down={down_payment}, annual_rent={annual_rental_income}, monthly_rent={base_monthly_rent}")  # Debug logging
-        
-        # Create calculator instance
-        calc = FinancialCalculator(
-            property_price=property_price,
-            down_payment=down_payment,
-            loan_term=loan_term,
-            interest_rate=interest_rate,
-            interest_type=interest_type,
-            base_monthly_rent=base_monthly_rent,
-            occupancy_rate=occupancy_rate,
-            rent_growth=rent_growth,
-            enhancement_costs=enhancement_costs,
-            hoa_fees_annual=hoa_fees_annual,
-            holding_period=holding_period,
-            resale_value=resale_value
-        )
+        calc = create_calculator_from_data(data)
         
         # Get scenario analysis
         scenarios = calc.get_scenario_analysis()
@@ -108,7 +70,8 @@ def calculate():
                 'total_interest': calc.get_total_interest(),
                 'break_even_years': advanced_metrics['payback_period'],
                 'occupancy_rate': calc.occupancy_rate,
-                'hoa_fees_annual': calc.hoa_fees_annual
+                'hoa_fees_annual': calc.hoa_fees_annual,
+                'operating_expenses_annual': calc.operating_expenses_annual
             }
         }
         
@@ -118,10 +81,7 @@ def calculate():
         return jsonify(sanitized_response)
         
     except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        print(f"Error in calculation: {str(e)}")
-        print(f"Full traceback:\n{error_trace}")
+        app.logger.exception("Calculation failed")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -249,10 +209,15 @@ def create_calculator_from_data(data):
     # despite its misleading name (legacy from when it was monthly)
     annual_rental_income = clean_numeric_input(data.get('base_monthly_rent', 0))
     base_monthly_rent = annual_rental_income / 12  # Convert annual to monthly
+    property_price = clean_numeric_input(data.get('property_price', 0))
+    if data.get('down_payment') not in (None, ''):
+        down_payment = clean_numeric_input(data['down_payment'])
+    else:
+        down_payment = property_price * clean_numeric_input(data.get('down_payment_percentage', 0)) / 100
     
     return FinancialCalculator(
-        property_price=clean_numeric_input(data.get('property_price', 0)),
-        down_payment=clean_numeric_input(data.get('down_payment', 0)),
+        property_price=property_price,
+        down_payment=down_payment,
         loan_term=int(data.get('loan_term', 30)),
         interest_rate=clean_numeric_input(data.get('interest_rate', 0)),
         interest_type=data.get('interest_type', 'apr'),
@@ -261,6 +226,7 @@ def create_calculator_from_data(data):
         rent_growth=clean_numeric_input(data.get('rent_growth', 0)),
         enhancement_costs=clean_numeric_input(data.get('enhancement_costs', 0)),
         hoa_fees_annual=clean_numeric_input(data.get('hoa_fees_annual', 0)),
+        operating_expenses_annual=clean_numeric_input(data.get('operating_expenses_annual', 0)),
         holding_period=int(data.get('holding_period', 10)),
         resale_value=clean_numeric_input(data.get('resale_value', 0))
     )

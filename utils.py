@@ -72,6 +72,7 @@ def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_d
             'Occupancy Rate (%)',
             'Effective Monthly Rent',
             'Annual HOA Fees',
+            'Other Annual Operating Expenses',
             'Monthly Cash Flow',
             'Annual Cash Flow'
         ])
@@ -83,6 +84,7 @@ def export_to_excel(calculator: FinancialCalculator, scenarios: Dict, scenario_d
             f"{calculator.occupancy_rate}%",
             format_currency(summary['effective_monthly_rent']),
             format_currency(calculator.hoa_fees_annual),
+            format_currency(calculator.operating_expenses_annual),
             format_currency(summary['monthly_cash_flow']),
             format_currency(summary['annual_cash_flow'])
         ])
@@ -328,4 +330,3 @@ def get_advanced_metrics(calculator) -> Dict[str, Any]:
         'annual_debt_service': annual_debt_service,
         'total_initial_investment': total_initial_investment
     }
-
