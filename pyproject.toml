@@ -1,7 +1,7 @@
 [project]
-name = "repl-nix-workspace"
+name = "real-estate-analyzer"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Flask dashboard for evaluating real estate investments"
 requires-python = ">=3.11"
 dependencies = [
     "flask>=3.1.1",
@@ -11,8 +11,6 @@ dependencies = [
     "numpy-financial>=1.0.0",
     "openpyxl>=3.1.5",
     "pandas>=2.3.0",
-    "plotly>=6.2.0",
-    "psycopg2-binary>=2.9.10",
     "weasyprint>=65.1",
-    "sqlalchemy>=2.0.41",
+    "pytest>=8.2.1",
 ]
